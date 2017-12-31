@@ -109,6 +109,10 @@ byte* arr_init(void)
   int i;
   byte* y;
   y = (byte*) calloc(CHARS,sizeof(byte));
+  if(y == NULL) {
+    fprintf(stderr, "Unable to initialize array\n");
+    exit(1);
+  }
   for(i=0;i<CHARS;i++) {
     (y[i]).data = 0;
     (y[i]).bckgrcol = black;
@@ -127,6 +131,10 @@ byte* read_in(byte* y, char* filename)
   i = 0;
   x = 0;
   fp = fopen(filename,"rb");
+  if(fp == NULL) {
+    fprintf(stderr,"Cannot open file\n");
+    exit(1);
+  }
   while(fread(&x,1,1,fp)) {
     if(x<MIN) {
       x += MIN;
