@@ -5,6 +5,19 @@
 #define COLS 40
 #define CHARS ROWS*COLS
 
+/*put in dot h file*/
+enum colour{black, red, green, yellow, blue, magenta, cyan, white};
+enum graphmod{alpnum, contig, seprt};
+enum height{sgl, dbl};
+
+struct byte {
+  int data;
+  colour bckgrcol;
+  colour frgrcol;
+  graphmod graphics;
+  height height;
+}
+
 void print_array(int* y);
 
 int main(void)
@@ -30,7 +43,7 @@ void print_array(int* y)
 {
   int i;
   for(i=0;i<CHARS;i++) {
-    printf("%d ",y[i]);
+    printf("%x ",y[i]);
     if((i+1) % ROWS == 0) {
       printf("\n");
     }
