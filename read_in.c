@@ -10,40 +10,68 @@ enum colour{black, red, green, yellow, blue, magenta, cyan, white};
 enum graphmod{alpnum, contig, seprt};
 enum height{sgl, dbl};
 
+typedef enum colour colour;
+typedef enum graphmod graphmod;
+typedef enum height height;
+
 struct byte {
   int data;
   colour bckgrcol;
   colour frgrcol;
   graphmod graphics;
   height height;
-}
+};
+typedef struct byte byte;
 
-void print_array(int* y);
+void print_array(byte* y);
+byte* arr_init(void); /*put these in separate file to abstract data type?*/
+byte* read_in(byte* y, char* filename);
 
 int main(void)
 {
-  FILE* fp;
-  int x, i;
-  int *y;
-  y = (int*) calloc(CHARS,sizeof(int));
-  i = 0;
-  x = 0;
-  fp = fopen("test.m7","rb");
-  while(fread(&x,1,1,fp)) {
-    y[i] = x;
-    i++;
-  }
+  byte *y;
+  y = arr_init();
+  y = read_in(y,"test.m7");
   print_array(y);
-  fclose(fp);
   free(y);
   return 0;
 }
 
-void print_array(int* y)
+byte* arr_init(void)
+{
+  int i;
+  byte* y;
+  y = (byte*) calloc(CHARS,sizeof(byte));
+  for(i=0;i<CHARS;i++) {
+    (y[i]).data = 0;
+    (y[i]).bckgrcol = black;
+    (y[i]).frgrcol = white;
+    (y[i]).graphics = contig;
+    (y[i]).height = sgl;
+  }
+  return y;
+}
+
+byte* read_in(byte* y, char* filename)
+{
+  FILE* fp;
+  int x, i;
+  i = 0;
+  x = 0;
+  fp = fopen(filename,"rb");
+  while(fread(&x,1,1,fp)) {
+    (y[i]).data = x;
+    i++;
+  }
+  fclose(fp);
+  return y;
+}
+
+void print_array(byte* y)
 {
   int i;
   for(i=0;i<CHARS;i++) {
-    printf("%x ",y[i]);
+    printf("%x ",(y[i]).data);
     if((i+1) % ROWS == 0) {
       printf("\n");
     }
