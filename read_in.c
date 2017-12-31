@@ -12,10 +12,12 @@
 enum colour{black, red, green, yellow, blue, magenta, cyan, white};
 enum graphmod{alphnum, contig, seprt};
 enum height{sgl, dbl};
+enum held{on, off};
 
 typedef enum colour colour;
 typedef enum graphmod graphmod;
 typedef enum height height;
+typedef enum held held;
 
 struct byte {
   int data;
@@ -23,6 +25,7 @@ struct byte {
   colour frgrcol;
   graphmod graphics;
   height height;
+  held held;
 };
 typedef struct byte byte;
 
@@ -49,11 +52,42 @@ void arr_process(byte* y)
 {
   int i;
   for(i = 0; i<CHARS; i++) {
+
+/*Change to alphanumeric mode and change foreground colour*/
     if((y[i]).data > 0x80 && (y[i]).data < 0x88) {
       (y[i]).graphics = alphnum;
       (y[i]).frgrcol = (y[i]).data - 0x80;
-      chg_row(y,i);
     }
+
+/*Change to contigious graphics mode and change foreground colour*/
+    else if((y[i]).data > 0x90 && (y[i]).data < 0x98) {
+      (y[i]).graphics = contig;
+      (y[i]).frgrcol = (y[i]).data - 0x90;
+    }
+
+/*Change height*/
+    else if((y[i]).data >= 0x8C && (y[i]).data <= 0x8D) {
+      (y[i]).height = (y[i]).data - 0x8C;
+    }
+
+/*Change contigious/separate graphics*/
+    else if((y[i]).data >= 0x99 && (y[i]).data <= 0x9A) {
+      (y[i]).graphics = (y[i]).data - 0x98;
+    }
+
+/*Change background*/
+    else if((y[i]).data == 0x9C) {
+      (y[i]).bckgrcol = black;
+    }
+    else if((y[i]).data == 0x9D) {
+      (y[i]).bckgrcol = (y[i]).frgrcol;
+    }
+
+  /*Held graphics*/
+    else if((y[i]).data >= 0x9E && (y[i]).data <= 0x9F) {
+      (y[i]).held = (y[i]).data - 0x9E;
+    }
+    chg_row(y,i);
   }
 }
 
@@ -66,6 +100,7 @@ void chg_row(byte* y, int i)
     (y[j]).frgrcol = (y[i]).frgrcol;
     (y[j]).graphics = (y[i]).graphics;
     (y[j]).height = (y[i]).height;
+    (y[j]).held = (y[i]).held;
   }
 }
 
@@ -80,6 +115,7 @@ byte* arr_init(void)
     (y[i]).frgrcol = white;
     (y[i]).graphics = contig;
     (y[i]).height = sgl;
+    (y[i]).held = off;
   }
   return y;
 }
