@@ -1,12 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "neillsdl2.h"
 
 #define ROWS 25
 #define COLS 40
 #define CHARS ROWS*COLS
 #define MIN 128
 #define STRSIZE 100
+#define HUE 255
 
 /*put in dot h file*/
 enum colour{black, red, green, yellow, blue, magenta, cyan, white};
@@ -161,82 +163,8 @@ void print_array(byte* y)
 void render(byte* y)
 {
   int i;
-  char a[STRSIZE];
-  for(i = 0;i<CHARS;i++) {
+  i = 0;
+  SDL_Simplewin sw;
+  fntrow fontdata[FNTCHARS][FNTHEIGHT];
 
-
-    if(y[i].bckgrcol == 0) {
-      strcat(a,"0");
-    }
-    else if(y[i].bckgrcol == 1) {
-      strcat(a,"1");
-    }
-    else if(y[i].bckgrcol == 2) {
-      strcat(a,"2");
-    }
-    else if(y[i].bckgrcol == 3) {
-      strcat(a,"3");
-    }
-    else if(y[i].bckgrcol == 4) {
-      strcat(a,"4");
-    }
-    else if(y[i].bckgrcol == 5) {
-      strcat(a,"5");
-    }
-    else if(y[i].bckgrcol == 6) {
-      strcat(a,"6");
-    }
-    else if(y[i].bckgrcol == 7) {
-      strcat(a,"7");
-    }
-
-    if(y[i].frgrcol == 0) {
-      strcat(a,"0");
-    }
-    else if(y[i].frgrcol == 1) {
-      strcat(a,"1");
-    }
-    else if(y[i].frgrcol == 2) {
-      strcat(a,"2");
-    }
-    else if(y[i].frgrcol == 3) {
-      strcat(a,"3");
-    }
-    else if(y[i].frgrcol == 4) {
-      strcat(a,"4");
-    }
-    else if(y[i].frgrcol == 5) {
-      strcat(a,"5");
-    }
-    else if(y[i].frgrcol == 6) {
-      strcat(a,"6");
-    }
-    else if(y[i].frgrcol == 7) {
-      strcat(a,"7");
-    }
-
-    if(y[i].graphics == 0) {
-      strcat(a,"0");
-    }
-    else if(y[i].graphics == 1) {
-      strcat(a,"1");
-    }
-    else if(y[i].graphics == 2) {
-      strcat(a,"2");
-    }
-
-    if(y[i].height == 0) {
-      strcat(a,"0");
-    }
-    else if(y[i].height == 1) {
-      strcat(a,"1");
-    }
-
-    printf("%s ",a);
-    if(i+1 % COLS == 0) {
-      printf("\n");
-    }
-    memset(a,0,strlen(a));
-
-  }
 }
