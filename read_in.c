@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "neillsdl2.h"
+#include "SDL_Wrap.h"
 
 #define ROWS 25
 #define COLS 40
@@ -9,6 +9,10 @@
 #define MIN 128
 #define STRSIZE 100
 #define HUE 255
+#define FONTFILE "m7fixed.fnt"
+#define SPACE ' '
+#define RECTSIZE 20
+#define MILLISECONDDELAY 20000
 
 /*put in dot h file*/
 enum colour{black, red, green, yellow, blue, magenta, cyan, white};
@@ -37,6 +41,8 @@ byte* read_in(byte* y, char* filename);
 void arr_process(byte* y);
 void chg_row(byte* y, int i);
 void render(byte* y);
+void set_colour(unsigned int* r, unsigned int* g, unsigned int* b, colour a);
+void set_coords(unsigned int *x,unsigned int *y, unsigned int i);
 
 int main(void)
 {
@@ -44,8 +50,8 @@ int main(void)
   y = arr_init();
   y = read_in(y,"test.m7");
   arr_process(y);
+  print_array(y);
   render(y);
-  /*print_array(y);*/
   free(y);
   return 0;
 }
@@ -152,7 +158,7 @@ void print_array(byte* y)
 {
   int i;
   for(i=0;i<CHARS;i++) {
-    printf("%x ",(y[i]).frgrcol);
+    printf("%x ",(y[i]).data);
     if((i+1) % COLS == 0) {
       printf("\n");
     }
@@ -162,9 +168,72 @@ void print_array(byte* y)
 
 void render(byte* y)
 {
-  int i;
-  i = 0;
+  unsigned int i, rf, gf, bf, rb, bb, gb, xx, yy; /*red green and blue, foreground and background*/
+  char a;
   SDL_Simplewin sw;
+  SDL_Rect rectangle;
   fntrow fontdata[FNTCHARS][FNTHEIGHT];
+  Neill_SDL_Init(&sw);
+  rectangle.w = RECTSIZE;
+  rectangle.h = RECTSIZE;
+  for(i=0;i<CHARS && !sw.finished;i++) {
 
+    /*if control code*/
+    printf("%x\n",y[i].data);
+    if(y[i].data < 0xa0) {
+      a = SPACE;
+    }
+    /*if alphanumeric mode*/
+    else if(y[i].graphics == alphnum) {
+      a = y[i].data - MIN;
+    }
+    else {
+      a = 'c';
+    }
+
+    set_coords(&xx, &yy, i);
+    set_colour(&rf, &gf, &bf, y[i].frgrcol);
+    set_colour(&rb, &gb, &bb, y[i].bckgrcol);
+    Neill_SDL_ReadFont(fontdata,FONTFILE);
+    Neill_SDL_SetDrawColour(&sw, rb, gb, bb);
+    rectangle.x = xx;
+    rectangle.y = yy;
+    SDL_RenderFillRect(sw.renderer, &rectangle);
+    Neill_SDL_SetDrawColour(&sw, rf, gf, bf);
+    Neill_SDL_DrawChar(&sw,fontdata,a,xx,yy);
+    Neill_SDL_UpdateScreen(&sw);
+  }
+  SDL_Delay(MILLISECONDDELAY);
+
+  if(sw.finished) {
+    atexit(SDL_Quit);
+  }
+}
+
+void set_coords(unsigned int *x,unsigned int *y, unsigned int i)
+{
+  *x = (i%COLS)*FNTWIDTH;
+  *y = (i/COLS)*FNTHEIGHT;
+}
+
+void set_colour(unsigned int *r, unsigned int* g,unsigned int* b, colour a)
+{
+  if(a == white || a == red || a == yellow || a == magenta) {
+    *r = HUE;
+  }
+  else {
+    *r = 0;
+  }
+  if(a == yellow || a == white || a == green || a == cyan) {
+    *g = HUE;
+  }
+  else {
+    *g = 0;
+  }
+  if(a == cyan || a == blue || a == magenta || a == white) {
+    *b = HUE;
+  }
+  else {
+    *b = 0;
+  }
 }

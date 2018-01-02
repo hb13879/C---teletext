@@ -1,16 +1,17 @@
-CFLAGS = -Wall -Wextra -Werror -Wfloat-equal -pedantic -ansi
-INCS =
+CFLAGS = `sdl2-config --cflags` -Wall -Wextra -Werror -Wfloat-equal -pedantic -ansi
+INCS = SDL_Wrap.h
+TARGET = read_in
+SOURCES =  $(TARGET).c SDL_Wrap.c
+LIBS =  `sdl2-config --libs` -lm
+CC = gcc
 
-all: read_in read_in_d
+all: $(TARGET)
 
-read_in:  read_in.c $(INCS)
-	$(CC) read_in.c -o read -O3 $(CFLAGS)
+$(TARGET): $(SOURCES) $(INCS)
+	$(CC) $(SOURCES) -o $(TARGET) $(CFLAGS) $(LIBS)
 
-read_in_d:  read_in.c $(INCS)
-	$(CC) read_in.c -o read_in_d -g -O $(CFLAGS)
+clean:
+	rm -f $(TARGET)
 
 run: all
-	./read
-
-memchk: read_in_d
-	valgrind --error-exitcode=1 --quiet --leak-check=full ./read_in_d
+	./$(TARGET)
