@@ -12,6 +12,10 @@
 #define FONTFILE "m7fixed.fnt"
 #define SPACE ' '
 #define MILLISECONDDELAY 20000
+#define ORIG 3
+#define DIM 2
+#define OX FNTWIDTH/DIM
+#define OY FNTHEIGHT/ORIG
 
 /*put in dot h file*/
 enum colour{black, red, green, yellow, blue, magenta, cyan, white};
@@ -42,6 +46,7 @@ void chg_row(byte* y, int i);
 void render(byte* y);
 void set_colour(shade* rgb, colour a);
 void set_coords(unsigned int *x,unsigned int *y, unsigned int i);
+void draw_sixels(SDL_Simplewin *sw, unsigned int xx,unsigned int yy, int data, shade rgbf, shade rgbb);
 
 int main(void)
 {
@@ -52,6 +57,7 @@ int main(void)
   print_array(y);*/
   render(y);
   free(y);
+  printf("%ld\n",FNTWIDTH);
   return 0;
 }
 
@@ -175,30 +181,65 @@ void render(byte* y)
   Neill_SDL_Init(&sw);
   for(i=0;i<CHARS && !sw.finished;i++) {
 
+    set_coords(&xx, &yy, i);
+    set_colour(&rgbf, y[i].frgrcol);
+    set_colour(&rgbb, y[i].bckgrcol);
     /*if control code*/
     if(y[i].data < 0xa0) {
       a = SPACE;
+      Neill_SDL_ReadFont(fontdata,FONTFILE);
+      Neill_SDL_SetDrawColour(&sw, rgbb);
+      Neill_SDL_DrawChar(&sw,fontdata,a,xx,yy,rgbf,rgbb);
+      Neill_SDL_UpdateScreen(&sw);
     }
     /*if alphanumeric mode*/
     else if(y[i].graphics == alphnum) {
       a = y[i].data - MIN;
+      Neill_SDL_ReadFont(fontdata,FONTFILE);
+      Neill_SDL_SetDrawColour(&sw, rgbb);
+      Neill_SDL_DrawChar(&sw,fontdata,a,xx,yy,rgbf,rgbb);
+      Neill_SDL_UpdateScreen(&sw);
+    }
+    else if(y[i].graphics == contig) {
+      draw_sixels(&sw, xx,yy,y[i].data,rgbf,rgbb);
     }
     else {
       a = 'c';
+      Neill_SDL_ReadFont(fontdata,FONTFILE);
+      Neill_SDL_SetDrawColour(&sw, rgbb);
+      Neill_SDL_DrawChar(&sw,fontdata,a,xx,yy,rgbf,rgbb);
+      Neill_SDL_UpdateScreen(&sw);
     }
-    set_coords(&xx, &yy, i);
-    set_colour(&rgbf, y[i].frgrcol);
-    set_colour(&rgbb, y[i].bckgrcol);
-    Neill_SDL_ReadFont(fontdata,FONTFILE);
-    Neill_SDL_SetDrawColour(&sw, rgbb);
-    Neill_SDL_DrawChar(&sw,fontdata,a,xx,yy,rgbf,rgbb);
-    Neill_SDL_UpdateScreen(&sw);
   }
   SDL_Delay(MILLISECONDDELAY);
 
   if(sw.finished) {
     atexit(SDL_Quit);
   }
+}
+
+void draw_sixels(SDL_Simplewin *sw, unsigned int x,unsigned int y, int data, shade rgbf, shade rgbb) /*try without passing colours*/
+{
+  SDL_Rect rectangle;
+  int i,j,lit[ORIG][DIM] = {{1,2},{4,8},{16,64}};
+  rectangle.w = OX;
+  rectangle.h = OY;
+  for(i=0;i<ORIG;i++) {
+    for(j=0;j<DIM;j++) {
+      lit[i][j] = (data >> lit[i][j]) & 1;
+      rectangle.x = x+j*OX;
+      rectangle.y = y+i*OY;
+      if(lit[i][j]) {
+        Neill_SDL_SetDrawColour(sw, rgbf);
+        SDL_RenderFillRect(sw->renderer, &rectangle);
+      }
+      else {
+        Neill_SDL_SetDrawColour(sw, rgbb);
+        SDL_RenderDrawRect(sw->renderer, &rectangle);
+      }
+    }
+  }
+  Neill_SDL_UpdateScreen(sw);
 }
 
 void set_coords(unsigned int *x,unsigned int *y, unsigned int i)
