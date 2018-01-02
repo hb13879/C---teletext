@@ -74,9 +74,9 @@ void Neill_SDL_Events(SDL_Simplewin *sw)
 
 
 /* Trivial wrapper to avoid complexities of renderer & alpha channels */
-void Neill_SDL_SetDrawColour(SDL_Simplewin *sw, Uint8 r, Uint8 g, Uint8 b)
+void Neill_SDL_SetDrawColour(SDL_Simplewin *sw, shade rgb)
 {
-   SDL_SetRenderDrawColor(sw->renderer, r, g, b, SDL_ALPHA_OPAQUE);
+   SDL_SetRenderDrawColor(sw->renderer, rgb.r, rgb.g, rgb.b, SDL_ALPHA_OPAQUE);
 }
 
 /* Filled Circle centred at (cx,cy) of radius r, see :
@@ -108,27 +108,27 @@ void Neill_SDL_RenderDrawCircle(SDL_Renderer *rend, int cx, int cy, int r)
    }
 }
 
-void Neill_SDL_DrawString(SDL_Simplewin *sw, fntrow fontdata[FNTCHARS][FNTHEIGHT], char *str, int ox, int oy,unsigned int rf,unsigned int gf,unsigned int bf,unsigned int rb,unsigned int gb,unsigned int bb)
+void Neill_SDL_DrawString(SDL_Simplewin *sw, fntrow fontdata[FNTCHARS][FNTHEIGHT], char *str, int ox, int oy,shade rgbf, shade rgbb)
 {
    int i=0;
    unsigned char chr;
    do{
       chr = str[i++];
-      Neill_SDL_DrawChar(sw, fontdata, chr, ox+i*FNTWIDTH, oy,rf,gf,bf,rb,gb,bb);
+      Neill_SDL_DrawChar(sw, fontdata, chr, ox+i*FNTWIDTH, oy,rgbf,rgbb);
    }while(str[i]);
 }
 
-void Neill_SDL_DrawChar(SDL_Simplewin *sw, fntrow fontdata[FNTCHARS][FNTHEIGHT], unsigned char chr, int ox, int oy, unsigned int rf,unsigned int gf,unsigned int bf,unsigned int rb,unsigned int gb,unsigned int bb)
+void Neill_SDL_DrawChar(SDL_Simplewin *sw, fntrow fontdata[FNTCHARS][FNTHEIGHT], unsigned char chr, int ox, int oy,shade rgbf, shade rgbb)
 {
    unsigned x, y;
    for(y = 0; y < FNTHEIGHT; y++){
       for(x = 0; x < FNTWIDTH; x++){
          if(fontdata[chr-FNT1STCHAR][y] >> (FNTWIDTH - 1 - x) & 1){
-            Neill_SDL_SetDrawColour(sw, rf, gf, bf);
+            Neill_SDL_SetDrawColour(sw, rgbf);
             SDL_RenderDrawPoint(sw->renderer, x + ox, y+oy);
          }
          else{
-            Neill_SDL_SetDrawColour(sw, rb, gb, bb);
+            Neill_SDL_SetDrawColour(sw, rgbb);
             SDL_RenderDrawPoint(sw->renderer, x + ox, y+oy);
          }
       }

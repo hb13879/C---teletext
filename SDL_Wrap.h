@@ -26,12 +26,19 @@ struct SDL_Simplewin {
 };
 typedef struct SDL_Simplewin SDL_Simplewin;
 
+struct shade {
+  unsigned int r;
+  unsigned int g;
+  unsigned int b;
+};
+typedef struct shade shade;
+
 void Neill_SDL_Init(SDL_Simplewin *sw);
 void Neill_SDL_Events(SDL_Simplewin *sw);
-void Neill_SDL_SetDrawColour(SDL_Simplewin *sw, Uint8 r, Uint8 g, Uint8 b);
+void Neill_SDL_SetDrawColour(SDL_Simplewin *sw, shade rgb);
 void Neill_SDL_RenderFillCircle(SDL_Renderer *rend, int cx, int cy, int r);
 void Neill_SDL_RenderDrawCircle(SDL_Renderer *rend, int cx, int cy, int r);
-void Neill_SDL_DrawChar(SDL_Simplewin *sw, fntrow fontdata[FNTCHARS][FNTHEIGHT], unsigned char chr, int ox, int oy,unsigned int rf,unsigned int gf,unsigned int bf,unsigned int rb,unsigned int gb,unsigned int bb);
-void Neill_SDL_DrawString(SDL_Simplewin *sw, fntrow fontdata[FNTCHARS][FNTHEIGHT], char *str, int ox, int oy,unsigned int rf,unsigned int gf,unsigned int bf,unsigned int rb,unsigned int gb,unsigned int bb);
+void Neill_SDL_DrawChar(SDL_Simplewin *sw, fntrow fontdata[FNTCHARS][FNTHEIGHT], unsigned char chr, int ox, int oy,shade rgbf, shade rgbb);
+void Neill_SDL_DrawString(SDL_Simplewin *sw, fntrow fontdata[FNTCHARS][FNTHEIGHT], char *str, int ox, int oy,shade rgbf,shade rgbb);
 void Neill_SDL_ReadFont(fntrow fontdata[FNTCHARS][FNTHEIGHT], char *fname);
 void Neill_SDL_UpdateScreen(SDL_Simplewin *sw);

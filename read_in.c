@@ -11,7 +11,6 @@
 #define HUE 255
 #define FONTFILE "m7fixed.fnt"
 #define SPACE ' '
-#define RECTSIZE 20
 #define MILLISECONDDELAY 20000
 
 /*put in dot h file*/
@@ -41,7 +40,7 @@ byte* read_in(byte* y, char* filename);
 void arr_process(byte* y);
 void chg_row(byte* y, int i);
 void render(byte* y);
-void set_colour(unsigned int* r, unsigned int* g, unsigned int* b, colour a);
+void set_colour(shade* rgb, colour a);
 void set_coords(unsigned int *x,unsigned int *y, unsigned int i);
 
 int main(void)
@@ -168,14 +167,12 @@ void print_array(byte* y)
 
 void render(byte* y)
 {
-  unsigned int i, rf, gf, bf, rb, bb, gb, xx, yy; /*red green and blue, foreground and background*/
+  unsigned int i, xx, yy;
+  shade rgbf,rgbb;
   char a;
-  SDL_Simplewin sw;/*
-  SDL_Rect rectangle;*/
+  SDL_Simplewin sw;
   fntrow fontdata[FNTCHARS][FNTHEIGHT];
-  Neill_SDL_Init(&sw);/*
-  rectangle.w = RECTSIZE;
-  rectangle.h = RECTSIZE;*/
+  Neill_SDL_Init(&sw);
   for(i=0;i<CHARS && !sw.finished;i++) {
 
     /*if control code*/
@@ -189,16 +186,12 @@ void render(byte* y)
     else {
       a = 'c';
     }
-    printf("%c\n",a);
     set_coords(&xx, &yy, i);
-    set_colour(&rf, &gf, &bf, y[i].frgrcol);
-    set_colour(&rb, &gb, &bb, y[i].bckgrcol);
+    set_colour(&rgbf, y[i].frgrcol);
+    set_colour(&rgbb, y[i].bckgrcol);
     Neill_SDL_ReadFont(fontdata,FONTFILE);
-    Neill_SDL_SetDrawColour(&sw, rb, gb, bb);/*
-    rectangle.x = xx;
-    rectangle.y = yy;
-    SDL_RenderFillRect(sw.renderer, &rectangle);*/
-    Neill_SDL_DrawChar(&sw,fontdata,a,xx,yy,rf,gf,bf,rb,gb,bb);
+    Neill_SDL_SetDrawColour(&sw, rgbb);
+    Neill_SDL_DrawChar(&sw,fontdata,a,xx,yy,rgbf,rgbb);
     Neill_SDL_UpdateScreen(&sw);
   }
   SDL_Delay(MILLISECONDDELAY);
@@ -214,27 +207,24 @@ void set_coords(unsigned int *x,unsigned int *y, unsigned int i)
   *y = (i/COLS)*FNTHEIGHT;
 }
 
-void set_colour(unsigned int *r, unsigned int* g,unsigned int* b, colour a)
+void set_colour(shade* rgb, colour a)
 {
   if(a == white || a == red || a == yellow || a == magenta) {
-    printf("r\n");
-    *r = HUE;
+    (*rgb).r = HUE;
   }
   else {
-    *r = 0;
+    (*rgb).r = 0;
   }
   if(a == yellow || a == white || a == green || a == cyan) {
-    *g = HUE;
-    printf("g\n");
+    (*rgb).g = HUE;
   }
   else {
-    *g = 0;
+    (*rgb).g = 0;
   }
   if(a == cyan || a == blue || a == magenta || a == white) {
-    *b = HUE;
-    printf("b\n");
+    (*rgb).b = HUE;
   }
   else {
-    *b = 0;
+    (*rgb).b = 0;
   }
 }
