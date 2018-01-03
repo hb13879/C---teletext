@@ -46,7 +46,7 @@ void chg_row(byte* y, int i);
 void render(byte* y);
 void set_colour(shade* rgb, colour a);
 void set_coords(unsigned int *x,unsigned int *y, unsigned int i);
-void draw_sixels(SDL_Simplewin *sw, unsigned int xx,unsigned int yy, int data, shade rgbf, shade rgbb);
+void draw_sixels(SDL_Simplewin *sw, unsigned int xx,unsigned int yy, int data, shade rgbf, shade rgbb, graphmod graphics);
 
 int main(void)
 {
@@ -130,7 +130,7 @@ byte* arr_init(void)
     (y[i]).data = 0;
     (y[i]).bckgrcol = black;
     (y[i]).frgrcol = white;
-    (y[i]).graphics = contig;
+    (y[i]).graphics = alphnum;
     (y[i]).height = sgl;
     (y[i]).held = off;
   }
@@ -192,16 +192,16 @@ void render(byte* y)
       Neill_SDL_DrawChar(&sw,fontdata,a,xx,yy,rgbf,rgbb);
       Neill_SDL_UpdateScreen(&sw);
     }
-    /*if alphanumeric mode*/
-    else if(y[i].graphics == alphnum) {
+    /*if an asci char*/
+    else if((y[i].data >= 0xC0 && y[i].data <= 0xDF) || y[i].graphics == alphnum) {
       a = y[i].data - MIN;
       Neill_SDL_ReadFont(fontdata,FONTFILE);
       Neill_SDL_SetDrawColour(&sw, rgbb);
       Neill_SDL_DrawChar(&sw,fontdata,a,xx,yy,rgbf,rgbb);
       Neill_SDL_UpdateScreen(&sw);
     }
-    else if(y[i].graphics == contig) {
-      draw_sixels(&sw, xx,yy,y[i].data,rgbf,rgbb);
+    else if(y[i].graphics != alphnum && !(y[i].data >= 0xC0 && y[i].data <= 0xDF)) {
+      draw_sixels(&sw, xx,yy,y[i].data,rgbf,rgbb,y[i].graphics);
     }
     else {
       a = 'c';
@@ -218,10 +218,10 @@ void render(byte* y)
   }
 }
 
-void draw_sixels(SDL_Simplewin *sw, unsigned int x,unsigned int y, int data, shade rgbf, shade rgbb) /*try without passing colours*/
+void draw_sixels(SDL_Simplewin *sw, unsigned int x,unsigned int y, int data, shade rgbf, shade rgbb, graphmod graphics) /*try without passing colours*/
 {
   SDL_Rect rectangle;
-  int i,j,lit[ORIG][DIM] = {{1,2},{4,8},{16,64}};
+  int i,j,lit[ORIG][DIM] = {{0,1},{2,3},{4,6}};
   rectangle.w = OX;
   rectangle.h = OY;
   for(i=0;i<ORIG;i++) {
@@ -232,12 +232,13 @@ void draw_sixels(SDL_Simplewin *sw, unsigned int x,unsigned int y, int data, sha
       if(lit[i][j]) {
         Neill_SDL_SetDrawColour(sw, rgbf);
         SDL_RenderFillRect(sw->renderer, &rectangle);
-      }
-      else {
-        Neill_SDL_SetDrawColour(sw, rgbb);
-        SDL_RenderDrawRect(sw->renderer, &rectangle);
+        if(graphics == seprt) {
+          Neill_SDL_SetDrawColour(sw, rgbb);
+          SDL_RenderDrawRect(sw->renderer, &rectangle);
+        }
       }
     }
+    printf("%d %d\n",rgbb.r,graphics);
   }
   Neill_SDL_UpdateScreen(sw);
 }
