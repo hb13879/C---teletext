@@ -74,7 +74,7 @@ void Neill_SDL_Events(SDL_Simplewin *sw)
 
 
 /* Trivial wrapper to avoid complexities of renderer & alpha channels */
-void Neill_SDL_SetDrawColour(SDL_Simplewin *sw, shade rgb)
+void Neill_SDL_SetDrawColour(SDL_Simplewin *sw, colour rgb)
 {
    SDL_SetRenderDrawColor(sw->renderer, rgb.r, rgb.g, rgb.b, SDL_ALPHA_OPAQUE);
 }
@@ -108,7 +108,7 @@ void Neill_SDL_RenderDrawCircle(SDL_Renderer *rend, int cx, int cy, int r)
    }
 }
 
-void Neill_SDL_DrawString(SDL_Simplewin *sw, fntrow fontdata[FNTCHARS][FNTHEIGHT], char *str, int ox, int oy,shade rgbf, shade rgbb)
+void Neill_SDL_DrawString(SDL_Simplewin *sw, fntrow fontdata[FNTCHARS][FNTHEIGHT], char *str, int ox, int oy,colour rgbf, colour rgbb)
 {
    int i=0;
    unsigned char chr;
@@ -118,7 +118,7 @@ void Neill_SDL_DrawString(SDL_Simplewin *sw, fntrow fontdata[FNTCHARS][FNTHEIGHT
    }while(str[i]);
 }
 
-void Neill_SDL_DrawChar(SDL_Simplewin *sw, fntrow fontdata[FNTCHARS][FNTHEIGHT], unsigned char chr, int ox, int oy,shade rgbf, shade rgbb)
+void Neill_SDL_DrawChar(SDL_Simplewin *sw, fntrow fontdata[FNTCHARS][FNTHEIGHT], unsigned char chr, int ox, int oy,colour rgbf, colour rgbb)
 {
    unsigned x, y;
    for(y = 0; y < FNTHEIGHT; y++){

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include "SDL_Wrap.h"
 
 #define ROWS 25
@@ -11,214 +12,139 @@
 #define HUE 255
 #define FONTFILE "m7fixed.fnt"
 #define SPACE ' '
-#define MILLISECONDDELAY 20000
+#define MILLISECONDDELAY 20
 #define ORIG 3
 #define DIM 2
 #define OX FNTWIDTH/DIM
 #define OY FNTHEIGHT/ORIG
 
 /*put in dot h file*/
-enum colour{black, red, green, yellow, blue, magenta, cyan, white};
-enum graphmod{alphnum, contig, seprt};
-enum height{sgl, dbl};
-enum held{on, off};
+enum heightmd{sgl, dbltop, dblbtm};
+enum shade{black, red, green, yellow, blue, magenta, cyan, white};
 
-typedef enum colour colour;
-typedef enum graphmod graphmod;
-typedef enum height height;
-typedef enum held held;
+typedef enum heightmd heightmd;
+typedef enum shade shade;
 
 struct byte {
-  int data;
-  colour bckgrcol;
-  colour frgrcol;
-  graphmod graphics;
-  height height;
-  held held;
+  int val;
+  heightmd height;
 };
 typedef struct byte byte;
 
-void print_array(byte* y);
-byte* arr_init(void); /*put these in separate file to abstract data type?*/
-byte* read_in(byte* y, char* filename);
+struct grid {
+  byte** data;
+  int x;
+  int y;
+  bool graphics;
+  bool alpha;
+  bool dblheight;
+  bool held;
+  char heldchar;
+  colour background;
+  colour foreground;
+};
+typedef struct grid grid;
+
+grid* grid_init(void);
+byte** data_init(void);
+void read_in(byte** data, char* filename);
+void print_array(byte** g);
+void set_graphics(grid* g);
+void set_alpha(grid* g);
+colour set_colour(shade a);
+void set_height(grid* g);
+void set_held(grid* g);
+void set_background(grid* g);
+int wrap(int a);
+void render(grid* g, SDL_Simplewin *sw);
+int set_coords(int xy, int x);
+void Draw_Char(grid* g, SDL_Simplewin *sw);
+void Draw_Sixel(grid* g, SDL_Simplewin *sw);
+void set_heightmd(grid* g);
+/*
+byte* arr_init(void); put these in separate file to abstract data type?
 void arr_process(byte* y);
 void chg_row(byte* y, int i);
 void render(byte* y);
 void set_colour(shade* rgb, colour a);
 void set_coords(unsigned int *x,unsigned int *y, unsigned int i);
 void draw_sixels(SDL_Simplewin *sw, unsigned int xx,unsigned int yy, int data, shade rgbf, shade rgbb, graphmod graphics);
-
+*/
 int main(void)
 {
-  byte *y;
-  y = arr_init();
-  y = read_in(y,"test.m7");
-  arr_process(y);/*
-  print_array(y);*/
+  int i,j;
+  grid* g;
+  SDL_Simplewin sw;
+  Neill_SDL_Init(&sw);
+  g = grid_init();
+  read_in(g->data,"test.m7");
+  print_array(g->data);
+  for(i=0;i<ROWS;i++) {
+    for(j=0;j<COLS;j++) {
+      g->x = j;
+      g->y = i;
+      set_graphics(g);
+      set_alpha(g);
+      set_height(g);
+      set_heightmd(g);
+      set_held(g);
+      set_background(g);
+      render(g, &sw);
+    }
+  }
+  do {
+    SDL_Delay(MILLISECONDDELAY);
+    Neill_SDL_Events(&sw);
+  } while(!sw.finished);/*
+  arr_process(y);
   render(y);
-  free(y);
-  printf("%ld\n",FNTWIDTH);
+  free(g); make this proper
+  printf("%ld\n",FNTWIDTH);*/
+  atexit(SDL_Quit);
   return 0;
 }
 
-void arr_process(byte* y)
+void set_background(grid* g)
 {
-  int i;
-  for(i = 0; i<CHARS; i++) {
-
-/*Change to alphanumeric mode and change foreground colour*/
-    if((y[i]).data > 0x80 && (y[i]).data < 0x88) {
-      (y[i]).graphics = alphnum;
-      (y[i]).frgrcol = (y[i]).data - 0x80;
-    }
-
-/*Change to contigious graphics mode and change foreground colour*/
-    else if((y[i]).data > 0x90 && (y[i]).data < 0x98) {
-      (y[i]).graphics = contig;
-      (y[i]).frgrcol = (y[i]).data - 0x90;
-    }
-
-/*Change height*/
-    else if((y[i]).data >= 0x8C && (y[i]).data <= 0x8D) {
-      (y[i]).height = (y[i]).data - 0x8C;
-    }
-
-/*Change contigious/separate graphics*/
-    else if((y[i]).data >= 0x99 && (y[i]).data <= 0x9A) {
-      (y[i]).graphics = (y[i]).data - 0x98;
-    }
-
-/*Change background*/
-    else if((y[i]).data == 0x9C) {
-      (y[i]).bckgrcol = black;
-    }
-    else if((y[i]).data == 0x9D) {
-      (y[i]).bckgrcol = (y[i]).frgrcol;
-    }
-
-  /*Held graphics*/
-    else if((y[i]).data >= 0x9E && (y[i]).data <= 0x9F) {
-      (y[i]).held = (y[i]).data - 0x9E;
-    }
-    chg_row(y,i);
+  if(g->data[g->y][g->x].val == 0x9C) {
+    g->background = set_colour(black);
+  }
+  else if(g->data[g->y][g->x].val == 0x9D) {
+    g->background = g->foreground;
   }
 }
 
-void chg_row(byte* y, int i)
+void render(grid* g, SDL_Simplewin *sw)
 {
-  int j;
-  for(j = i+1;j % COLS != 0;j++)
-  {
-    (y[j]).bckgrcol = (y[i]).bckgrcol;
-    (y[j]).frgrcol = (y[i]).frgrcol;
-    (y[j]).graphics = (y[i]).graphics;
-    (y[j]).height = (y[i]).height;
-    (y[j]).held = (y[i]).held;
+  if((g->data[g->y][g->x].val < 0xA0) || (g->data[g->y][g->x].val >= 0xC0 && g->data[g->y][g->x].val <= 0xDF) || g->alpha == 1) {
+    Draw_Char(g,sw);
+  }
+  else {
+    Draw_Sixel(g,sw);
   }
 }
 
-byte* arr_init(void)
+void Draw_Char(grid* g, SDL_Simplewin *sw)
 {
-  int i;
-  byte* y;
-  y = (byte*) calloc(CHARS,sizeof(byte));
-  if(y == NULL) {
-    fprintf(stderr, "Unable to initialize array\n");
-    exit(1);
-  }
-  for(i=0;i<CHARS;i++) {
-    (y[i]).data = 0;
-    (y[i]).bckgrcol = black;
-    (y[i]).frgrcol = white;
-    (y[i]).graphics = alphnum;
-    (y[i]).height = sgl;
-    (y[i]).held = off;
-  }
-  return y;
-}
-
-byte* read_in(byte* y, char* filename)
-{
-  FILE* fp;
-  int x, i;
-  i = 0;
-  x = 0;
-  fp = fopen(filename,"rb");
-  if(fp == NULL) {
-    fprintf(stderr,"Cannot open file\n");
-    exit(1);
-  }
-  while(fread(&x,1,1,fp)) {
-    if(x<MIN) {
-      x += MIN;
-    }
-    (y[i]).data = x;
-    i++;
-  }
-  fclose(fp);
-  return y;
-}
-
-void print_array(byte* y)
-{
-  int i;
-  for(i=0;i<CHARS;i++) {
-    printf("%x ",(y[i]).data);
-    if((i+1) % COLS == 0) {
-      printf("\n");
-    }
-  }
-}
-
-
-void render(byte* y)
-{
-  unsigned int i, xx, yy;
-  shade rgbf,rgbb;
-  char a;
-  SDL_Simplewin sw;
+  char c;
   fntrow fontdata[FNTCHARS][FNTHEIGHT];
-  Neill_SDL_Init(&sw);
-  for(i=0;i<CHARS && !sw.finished;i++) {
-
-    set_coords(&xx, &yy, i);
-    set_colour(&rgbf, y[i].frgrcol);
-    set_colour(&rgbb, y[i].bckgrcol);
-    /*if control code*/
-    if(y[i].data < 0xa0) {
-      a = SPACE;
-      Neill_SDL_ReadFont(fontdata,FONTFILE);
-      Neill_SDL_SetDrawColour(&sw, rgbb);
-      Neill_SDL_DrawChar(&sw,fontdata,a,xx,yy,rgbf,rgbb);
-      Neill_SDL_UpdateScreen(&sw);
-    }
-    /*if an asci char*/
-    else if((y[i].data >= 0xC0 && y[i].data <= 0xDF) || y[i].graphics == alphnum) {
-      a = y[i].data - MIN;
-      Neill_SDL_ReadFont(fontdata,FONTFILE);
-      Neill_SDL_SetDrawColour(&sw, rgbb);
-      Neill_SDL_DrawChar(&sw,fontdata,a,xx,yy,rgbf,rgbb);
-      Neill_SDL_UpdateScreen(&sw);
-    }
-    else if(y[i].graphics != alphnum && !(y[i].data >= 0xC0 && y[i].data <= 0xDF)) {
-      draw_sixels(&sw, xx,yy,y[i].data,rgbf,rgbb,y[i].graphics);
+  if(g->data[g->y][g->x].val >= 0xA0) {
+    c = g->data[g->y][g->x].val - MIN;
+  }
+  if(g->data[g->y][g->x].val < 0xA0) {
+    if(g->held == false) {
+      c = SPACE;
     }
     else {
-      a = 'c';
-      Neill_SDL_ReadFont(fontdata,FONTFILE);
-      Neill_SDL_SetDrawColour(&sw, rgbb);
-      Neill_SDL_DrawChar(&sw,fontdata,a,xx,yy,rgbf,rgbb);
-      Neill_SDL_UpdateScreen(&sw);
+      c = g->heldchar;
     }
   }
-  SDL_Delay(MILLISECONDDELAY);
-
-  if(sw.finished) {
-    atexit(SDL_Quit);
-  }
+  Neill_SDL_ReadFont(fontdata, FONTFILE);
+  Neill_SDL_DrawChar(sw,fontdata,c,set_coords(g->x,1),set_coords(g->y,0),g->foreground,g->background);
+  Neill_SDL_UpdateScreen(sw);
 }
 
-void draw_sixels(SDL_Simplewin *sw, unsigned int x,unsigned int y, int data, shade rgbf, shade rgbb, graphmod graphics) /*try without passing colours*/
+void Draw_Sixel(grid* g, SDL_Simplewin *sw)
 {
   SDL_Rect rectangle;
   int i,j,lit[ORIG][DIM] = {{0,1},{2,3},{4,6}};
@@ -226,47 +152,192 @@ void draw_sixels(SDL_Simplewin *sw, unsigned int x,unsigned int y, int data, sha
   rectangle.h = OY;
   for(i=0;i<ORIG;i++) {
     for(j=0;j<DIM;j++) {
-      lit[i][j] = (data >> lit[i][j]) & 1;
-      rectangle.x = x+j*OX;
-      rectangle.y = y+i*OY;
+      lit[i][j] = (g->data[g->y][g->x].val >> lit[i][j]) & 1;
+      rectangle.x = set_coords(g->x,1)+j*OX;
+      rectangle.y = set_coords(g->y,0)+i*OY;
       if(lit[i][j]) {
-        Neill_SDL_SetDrawColour(sw, rgbf);
+        Neill_SDL_SetDrawColour(sw, g->foreground);
         SDL_RenderFillRect(sw->renderer, &rectangle);
-        if(graphics == seprt) {
-          Neill_SDL_SetDrawColour(sw, rgbb);
-          SDL_RenderDrawRect(sw->renderer, &rectangle);
-        }
+      }
+      if(g->graphics == 1) {
+        Neill_SDL_SetDrawColour(sw, g->background);
+        SDL_RenderDrawRect(sw->renderer, &rectangle);
       }
     }
-    printf("%d %d\n",rgbb.r,graphics);
   }
   Neill_SDL_UpdateScreen(sw);
 }
 
-void set_coords(unsigned int *x,unsigned int *y, unsigned int i)
+int set_coords(int xy, int x)
 {
-  *x = (i%COLS)*FNTWIDTH;
-  *y = (i/COLS)*FNTHEIGHT;
+  if(x == 1) {
+    return xy*FNTWIDTH;
+  }
+  else {
+    return xy*FNTHEIGHT;
+  }
 }
 
-void set_colour(shade* rgb, colour a)
+int wrap(int a)
 {
-  if(a == white || a == red || a == yellow || a == magenta) {
-    (*rgb).r = HUE;
+  if(a < 0) {
+    return a + ROWS;
   }
   else {
-    (*rgb).r = 0;
+    return a % ROWS;
   }
-  if(a == yellow || a == white || a == green || a == cyan) {
-    (*rgb).g = HUE;
+}
+
+void set_heightmd(grid* g)
+{
+  if(g->dblheight == true) {
+    if(g->data[wrap((g->y)-1)][g->x].height == dbltop) {
+      g->data[g->y][g->x].height = dblbtm;
+    }
+    else {
+      g->data[g->y][g->x].height = dbltop;
+    }
+  }
+}
+void set_held(grid* g)
+{
+  if(g->data[g->y][g->x].val == 0x9E) {
+    g->held = 1;
+  }
+  else if(g->x == 0 || g->data[g->y][g->x].val == 0x9F) {
+    g->held = 0;
+  }
+}
+
+void set_height(grid* g)
+{
+  if(g->data[g->y][g->x].val == 0x8C) {
+    g->dblheight = false;
+  }
+  else if(g->data[g->y][g->x].val == 0x8D) {
+    g->dblheight = true;
+  }
+}
+
+void set_alpha(grid* g)
+{
+  if(g->data[g->y][g->x].val > 0x80 && g->data[g->y][g->x].val < 0x88) {
+    g->alpha = 1;
+    g->foreground = set_colour(g->data[g->y][g->x].val - 0x80);
+  }
+  else if(g->x == 0) {
+    g->alpha = 1;
+    g->foreground = set_colour(white);
+  }
+}
+
+void set_graphics(grid* g) /*if you turn select a graphics colour or mode, alphanumeric mode turns off*/
+{
+  if(g->x == 0) {
+    g->graphics = 0;
+    g->alpha = 1;
+  }
+  if(g->data[g->y][g->x].val == 0x99) { /*if new line or change*/
+    g->graphics = 0;
+    g->alpha = 0;
+  }
+  else if(g->data[g->y][g->x].val == 0x9A) {
+    g->graphics = 1;
+    g->alpha = 0;
+  }
+  if(g->data[g->y][g->x].val > 0x90 && g->data[g->y][g->x].val < 0x98) {
+    g->foreground = set_colour(g->data[g->y][g->x].val - 0x90);
+    g->alpha = 0;
+  }
+}
+
+grid* grid_init(void)
+{
+  grid* g;
+  g = (grid*) malloc(sizeof(grid));
+  if(g == NULL) {
+    printf("Grid failed to initialise\n");
+    exit(1);
+  }
+  g->data = data_init();
+  g->x = 0;
+  g->y = 0;
+  g->graphics = 0;
+  g->alpha = 1;
+  g->background = set_colour(black); /*set to black*/
+  g->foreground = set_colour(white); /*set to white*/
+  g->held = 0;
+  g->heldchar = SPACE;
+  return g;
+}
+
+byte** data_init(void)
+{
+  int i;
+  byte** data;
+  data = (byte**) calloc(ROWS,sizeof(byte*));
+  if(data == NULL) {
+    printf("Data array failed to initialise\n");
+    exit(1);
+  }
+  for(i=0;i<ROWS;i++) {
+    data[i] = (byte*) calloc(COLS, sizeof(byte));
+    if(data[i] == NULL) {
+      printf("Data array failed to initialise\n");
+      exit(1);
+    }
+  }
+  return data;
+}
+
+void read_in(byte** data, char* filename)
+{
+  FILE* fp;
+  int i, j;
+  fp = fopen(filename,"rb");
+  if(fp == NULL) {
+    fprintf(stderr,"Cannot open file\n");
+    exit(1);
+  }
+  for(i=0;i<ROWS;i++) {
+    for(j=0;j<COLS;j++) {
+      fread(&((data[i][j]).val),1,1,fp);
+    }
+  }
+  fclose(fp);
+}
+
+void print_array(byte** arr)
+{
+  int i,j;
+  for(i=13;i<14;i++) {
+    for(j=0;j<COLS;j++) {
+      printf("%x ",(arr[i][j]).val);
+    }
+    printf("\n");
+  }
+}
+
+colour set_colour(shade a)
+{
+  colour rgb;
+  if(a == red || a == yellow || a == magenta || a == white) {
+    rgb.r = HUE;
   }
   else {
-    (*rgb).g = 0;
+    rgb.r = 0;
   }
-  if(a == cyan || a == blue || a == magenta || a == white) {
-    (*rgb).b = HUE;
+  if(a == green || a == yellow || a == cyan || a == white) {
+    rgb.g = HUE;
   }
   else {
-    (*rgb).b = 0;
+    rgb.g = 0;
   }
+  if(a == blue || a == magenta || a == cyan || a == white) {
+    rgb.b = HUE;
+  }
+  else {
+    rgb.b = 0;
+  }
+  return rgb;
 }
