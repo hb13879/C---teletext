@@ -135,6 +135,44 @@ void Neill_SDL_DrawChar(SDL_Simplewin *sw, fntrow fontdata[FNTCHARS][FNTHEIGHT],
    }
 }
 
+void Neill_SDL_DrawTopHalf(SDL_Simplewin *sw, fntrow fontdata[FNTCHARS][FNTHEIGHT], unsigned char chr, int ox, int oy,colour rgbf, colour rgbb)
+{
+   unsigned x, y;
+   for(y = 0; y < FNTHEIGHT/2; y++){
+      for(x = 0; x < FNTWIDTH; x++){
+         if(fontdata[chr-FNT1STCHAR][y] >> (FNTWIDTH - 1 - x) & 1){
+            Neill_SDL_SetDrawColour(sw, rgbf);
+            SDL_RenderDrawPoint(sw->renderer, x + ox, 2*y+oy);
+            SDL_RenderDrawPoint(sw->renderer, x + ox, 2*y+1+oy);
+         }
+         else{
+            Neill_SDL_SetDrawColour(sw, rgbb);
+            SDL_RenderDrawPoint(sw->renderer, x + ox, y+oy);
+            SDL_RenderDrawPoint(sw->renderer, x + ox, 2*y+oy+1);
+         }
+      }
+   }
+}
+
+void Neill_SDL_DrawBottomHalf(SDL_Simplewin *sw, fntrow fontdata[FNTCHARS][FNTHEIGHT], unsigned char chr, int ox, int oy,colour rgbf, colour rgbb)
+{
+   unsigned x, y;
+   for(y = FNTHEIGHT/2; y < FNTHEIGHT; y++){
+      for(x = 0; x < FNTWIDTH; x++){
+         if(fontdata[chr-FNT1STCHAR][y] >> (FNTWIDTH - 1 - x) & 1){
+            Neill_SDL_SetDrawColour(sw, rgbf);
+            SDL_RenderDrawPoint(sw->renderer, x + ox, 2*(y-FNTHEIGHT/2)+oy);
+            SDL_RenderDrawPoint(sw->renderer, x + ox, 2*(y-FNTHEIGHT/2)+1+oy);
+         }
+         else{
+            Neill_SDL_SetDrawColour(sw, rgbb);
+            SDL_RenderDrawPoint(sw->renderer, x + ox, y+oy);
+            SDL_RenderDrawPoint(sw->renderer, x + ox, 2*y+oy+1);
+         }
+      }
+   }
+}
+
 void Neill_SDL_ReadFont(fntrow fontdata[FNTCHARS][FNTHEIGHT], char *fname)
 {
     FILE *fp = fopen(fname, "rb");

@@ -39,6 +39,8 @@ void Neill_SDL_SetDrawColour(SDL_Simplewin *sw, colour rgb);
 void Neill_SDL_RenderFillCircle(SDL_Renderer *rend, int cx, int cy, int r);
 void Neill_SDL_RenderDrawCircle(SDL_Renderer *rend, int cx, int cy, int r);
 void Neill_SDL_DrawChar(SDL_Simplewin *sw, fntrow fontdata[FNTCHARS][FNTHEIGHT], unsigned char chr, int ox, int oy,colour rgbf, colour rgbb);
+void Neill_SDL_DrawTopHalf(SDL_Simplewin *sw, fntrow fontdata[FNTCHARS][FNTHEIGHT], unsigned char chr, int ox, int oy,colour rgbf, colour rgbb);
+void Neill_SDL_DrawBottomHalf(SDL_Simplewin *sw, fntrow fontdata[FNTCHARS][FNTHEIGHT], unsigned char chr, int ox, int oy,colour rgbf, colour rgbb);
 void Neill_SDL_DrawString(SDL_Simplewin *sw, fntrow fontdata[FNTCHARS][FNTHEIGHT], char *str, int ox, int oy,colour rgbf,colour rgbb);
 void Neill_SDL_ReadFont(fntrow fontdata[FNTCHARS][FNTHEIGHT], char *fname);
 void Neill_SDL_UpdateScreen(SDL_Simplewin *sw);

@@ -140,7 +140,15 @@ void Draw_Char(grid* g, SDL_Simplewin *sw)
     }
   }
   Neill_SDL_ReadFont(fontdata, FONTFILE);
-  Neill_SDL_DrawChar(sw,fontdata,c,set_coords(g->x,1),set_coords(g->y,0),g->foreground,g->background);
+  if(g->data[g->y][g->x].height == sgl) {
+    Neill_SDL_DrawChar(sw,fontdata,c,set_coords(g->x,1),set_coords(g->y,0),g->foreground,g->background);
+  }
+  else if(g->data[g->y][g->x].height == dbltop) {
+    Neill_SDL_DrawTopHalf(sw,fontdata,c,set_coords(g->x,1),set_coords(g->y,0),g->foreground,g->background);
+  }
+  else if(g->data[g->y][g->x].height == dblbtm) {
+    Neill_SDL_DrawBottomHalf(sw,fontdata,c,set_coords(g->x,1),set_coords(g->y,0),g->foreground,g->background);
+  }
   Neill_SDL_UpdateScreen(sw);
 }
 
@@ -268,6 +276,7 @@ grid* grid_init(void)
   g->foreground = set_colour(white); /*set to white*/
   g->held = 0;
   g->heldchar = SPACE;
+  g->dblheight = false;
   return g;
 }
 
