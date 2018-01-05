@@ -18,6 +18,8 @@
 #define OY FNTHEIGHT/ORIG
 /*Nulls?*/
 /*put in dot h file*/
+/*magic numbers*/
+/*On error*/
 enum heightmd{sgl, dbltop, dblbtm};
 enum shade{black, red, green, yellow, blue, magenta, cyan, white};
 
@@ -31,14 +33,14 @@ struct byte {
 typedef struct byte byte;
 
 struct grid {
-  byte** data;
+  byte** data; /*Where the teletext file values are stored*/
   int x;
   int y;
-  bool graphics;
-  bool alpha;
+  bool graphics; /*Contigious or Separated*/
+  bool alpha; /*Alpanumeric Mode or not - here I assume that if alphanumeric mode is on (as default), this overrides graphics mode. When graphics are selected, it is turned off*/
   bool dblheight;
-  bool held;
-  int heldchar;
+  bool held; /*Whether hold graphics is on or not */
+  int heldchar; /*What the most recent graphic symbol was */
   colour background;
   colour foreground;
 };
@@ -56,7 +58,7 @@ void set_held(grid* g);
 void set_background(grid* g);
 int wrap(int a);
 void render(grid* g, SDL_Simplewin *sw);
-int set_coords(int xy, int x);
+int set_xy(int xy, int x);
 void draw_char(grid* g, SDL_Simplewin *sw);
 void draw_sixel(grid* g, SDL_Simplewin *sw);
 void set_heightmd(grid* g);
@@ -64,24 +66,51 @@ void hold_screen(SDL_Simplewin *sw);
 void process_render(grid* g, SDL_Simplewin *sw);
 void free_grid(grid** g);
 void free_data(byte** data);
+int get_data(grid* g);
+void set_data(grid* g, int a);
+heightmd get_heightmd(grid* g);
+void process_data(grid* g);
+void held_graphic(grid* g,SDL_Simplewin *sw);
+char set_char(grid* g);
 
-int main(void)
+int main(int argc, char** argv)
 {
-  grid* g;
-  SDL_Simplewin sw;
-  Neill_SDL_Init(&sw);
-  g = grid_init();
-  read_in(g->data,"test.m7");
-  process_render(g,&sw);
-  hold_screen(&sw);
-  free_grid(&g);
+  if(argc != 2) {
+    fprintf(stderr, "%s\n", "Error - try this");
+    exit(1);
+  }
+  else {
+    grid* g;
+    SDL_Simplewin sw;
+    Neill_SDL_Init(&sw);
+    g = grid_init();
+    read_in(g->data,argv[1]);
+    process_render(g,&sw);
+    free_grid(&g);
+  }
   return 0;
+}
+
+/*Wrappers to facilitate getting and setting data from/in the underlying array*/
+int get_data(grid* g)
+{
+  return g->data[g->y][g->x].val;
+}
+
+heightmd get_heightmd(grid* g)
+{
+  return g->data[g->y][g->x].height;
+}
+
+
+void set_data(grid* g, int a)
+{
+  g->data[g->y][g->x].val = a;
 }
 
 void free_grid(grid** g)
 {
-  grid* p;
-  p = *g;
+  grid* p = *g;
   free_data(p->data);
   free(p->data);
   p->data = NULL;
@@ -100,21 +129,24 @@ void free_data(byte** data)
 
 void process_render(grid* g, SDL_Simplewin *sw)
 {
-  int i,j;
-  for(i=0;i<ROWS;i++) {
-    for(j=0;j<COLS && !sw->finished;j++) {
-      g->x = j;
-      g->y = i;
-      set_graphics(g);
-      set_alpha(g);
-      set_height(g);
-      set_heightmd(g);
-      set_held(g);
-      set_background(g);
+  for((g->y)=0;(g->y)<ROWS;(g->y)++) {
+    for((g->x)=0;(g->x)<COLS && !sw->finished;(g->x)++) {
+      process_data(g);
       render(g, sw);
       Neill_SDL_Events(sw);
     }
   }
+  hold_screen(sw);
+}
+
+void process_data(grid* g)
+{
+  set_graphics(g);
+  set_alpha(g);
+  set_height(g);
+  set_heightmd(g);
+  set_held(g);
+  set_background(g);
 }
 
 void hold_screen(SDL_Simplewin *sw)
@@ -128,69 +160,81 @@ void hold_screen(SDL_Simplewin *sw)
 
 void set_background(grid* g)
 {
-  if(g->data[g->y][g->x].val == 0x9C) {
+  if(get_data(g) == 0x9C) {
     g->background = set_colour(black);
   }
-  else if(g->data[g->y][g->x].val == 0x9D) {
+  else if(get_data(g) == 0x9D) {
     g->background = g->foreground;
   }
 }
 
 void render(grid* g, SDL_Simplewin *sw)
 {
-  if((g->data[g->y][g->x].val < 0xA0) || (g->data[g->y][g->x].val >= 0xC0 && g->data[g->y][g->x].val <= 0xDF) || g->alpha == 1) {
+  if(get_data(g) < 0xA0 && g->held) {
+    held_graphic(g,sw);
+  }
+  else if((get_data(g) < 0xA0) || (get_data(g) >= 0xC0 && get_data(g) <= 0xDF) || g->alpha == 1) {
     draw_char(g,sw);
   }
   else {
     draw_sixel(g,sw);
   }
+  Neill_SDL_UpdateScreen(sw);
+}
+
+void held_graphic(grid* g,SDL_Simplewin *sw)
+{
+  if(g->heldchar > 0xFF) {
+    set_data(g,(g->heldchar)/2);
+  }
+  else {
+    set_data(g,(g->heldchar));
+  }
+  draw_sixel(g,sw);
+}
+
+char set_char(grid* g)
+{
+  if(get_data(g) >= 0xA0) {
+    /*to return correct asci value*/
+    return (get_data(g) - MIN);
+  }
+  else {
+    return SPACE;
+  }
 }
 
 void draw_char(grid* g, SDL_Simplewin *sw)
 {
-  if(g->data[g->y][g->x].val < 0xA0 && g->held) {
-    if(g->heldchar > 0xFF) {
-      g->data[g->y][g->x].val = (g->heldchar)/2;
-    }
-    else {
-      g->data[g->y][g->x].val = g->heldchar;
-    }
-    draw_sixel(g,sw);
+  fntrow fontdata[FNTCHARS][FNTHEIGHT];
+  char c = set_char(g);
+  Neill_SDL_ReadFont(fontdata, FONTFILE);
+  if(get_heightmd(g) == sgl) {
+    Neill_SDL_DrawChar(sw,fontdata,c,set_xy(g->x,1),
+    set_xy(g->y,0),g->foreground,g->background);
+  }
+  else if(get_heightmd(g) == dbltop) {
+    Neill_SDL_DrawTopHalf(sw,fontdata,c,set_xy(g->x,1),
+    set_xy(g->y,0),g->foreground,g->background);
   }
   else {
-    char c;
-    fntrow fontdata[FNTCHARS][FNTHEIGHT];
-    if(g->data[g->y][g->x].val >= 0xA0) {
-      c = g->data[g->y][g->x].val - MIN;
-    }
-    else {
-      c = SPACE;
-    }
-    Neill_SDL_ReadFont(fontdata, FONTFILE);
-    if(g->data[g->y][g->x].height == sgl) {
-      Neill_SDL_DrawChar(sw,fontdata,c,set_coords(g->x,1),set_coords(g->y,0),g->foreground,g->background);
-    }
-    else if(g->data[g->y][g->x].height == dbltop) {
-      Neill_SDL_DrawTopHalf(sw,fontdata,c,set_coords(g->x,1),set_coords(g->y,0),g->foreground,g->background);
-    }
-    else if(g->data[g->y][g->x].height == dblbtm) {
-      Neill_SDL_DrawBottomHalf(sw,fontdata,c,set_coords(g->x,1),set_coords(g->y,0),g->foreground,g->background);
-    }
-    Neill_SDL_UpdateScreen(sw);
+    Neill_SDL_DrawBottomHalf(sw,fontdata,c,set_xy(g->x,1),
+    set_xy(g->y,0),g->foreground,g->background);
   }
 }
 
 void draw_sixel(grid* g, SDL_Simplewin *sw)
 {
   SDL_Rect rectangle;
+  /*lit matrix corresponds to bit position of 1,2,4,8,16,and 64*/
   int i,j,lit[ORIG][DIM] = {{0,1},{2,3},{4,6}};
   rectangle.w = OX;
   rectangle.h = OY;
   for(i=0;i<ORIG;i++) {
     for(j=0;j<DIM;j++) {
-      lit[i][j] = (g->data[g->y][g->x].val >> lit[i][j]) & 1;
-      rectangle.x = set_coords(g->x,1)+j*OX;
-      rectangle.y = set_coords(g->y,0)+i*OY;
+      lit[i][j] = (get_data(g) >> lit[i][j]) & 1;
+      rectangle.x = set_xy(g->x,1)+j*OX;
+      rectangle.y = set_xy(g->y,0)+i*OY;
       if(lit[i][j]) {
         Neill_SDL_SetDrawColour(sw, g->foreground);
         SDL_RenderFillRect(sw->renderer, &rectangle);
@@ -201,13 +245,12 @@ void draw_sixel(grid* g, SDL_Simplewin *sw)
       }
     }
   }
-  Neill_SDL_UpdateScreen(sw);
-  g->heldchar = (g->data[g->y][g->x].val)*g->graphics;
+  g->heldchar = (get_data(g))*g->graphics;
 }
 
-int set_coords(int xy, int x)
+int set_xy(int xy, int x)
 {
-  if(x == 1) {
+  if(x) {
     return xy*FNTWIDTH;
   }
   else {
@@ -227,7 +270,7 @@ int wrap(int a)
 
 void set_heightmd(grid* g)
 {
-  if(g->dblheight == true) {
+  if(g->dblheight) {
     if(g->data[wrap((g->y)-1)][g->x].height == dbltop) {
       g->data[g->y][g->x].height = dblbtm;
     }
@@ -236,31 +279,33 @@ void set_heightmd(grid* g)
     }
   }
 }
+
 void set_held(grid* g)
 {
-  if(g->data[g->y][g->x].val == 0x9E) {
+  if(get_data(g) == 0x9E) {
     g->held = 1;
   }
-  else if(g->x == 0 || g->data[g->y][g->x].val == 0x9F) {
+  else if(g->x == 0 || get_data(g) == 0x9F) {
     g->held = 0;
   }
 }
 
 void set_height(grid* g)
 {
-  if(g->data[g->y][g->x].val == 0x8C) {
+  if(get_data(g) == 0x8C) {
     g->dblheight = false;
   }
-  else if(g->data[g->y][g->x].val == 0x8D) {
+  else if(get_data(g) == 0x8D) {
     g->dblheight = true;
   }
 }
 
 void set_alpha(grid* g)
 {
-  if(g->data[g->y][g->x].val > 0x80 && g->data[g->y][g->x].val < 0x88) {
+  if(get_data(g) > 0x80 && get_data(g) < 0x88) {
     g->alpha = 1;
-    g->foreground = set_colour(g->data[g->y][g->x].val - 0x80);
+    /*to give correct enumeration for colours:*/
+    g->foreground = set_colour(get_data(g) - 0x80);
   }
   else if(g->x == 0) {
     g->alpha = 1;
@@ -274,16 +319,17 @@ void set_graphics(grid* g) /*if you turn select a graphics colour or mode, alpha
     g->graphics = 0;
     g->alpha = 1;
   }
-  if(g->data[g->y][g->x].val == 0x99) { /*if new line or change*/
+  if(get_data(g) == 0x99) { /*if new line or change*/
     g->graphics = 0;
     g->alpha = 0;
   }
-  else if(g->data[g->y][g->x].val == 0x9A) {
+  else if(get_data(g) == 0x9A) {
     g->graphics = 1;
     g->alpha = 0;
   }
-  if(g->data[g->y][g->x].val > 0x90 && g->data[g->y][g->x].val < 0x98) {
-    g->foreground = set_colour(g->data[g->y][g->x].val - 0x90);
+  if(get_data(g) > 0x90 && get_data(g) < 0x98) {
+    /*To give correct enumeration for colour*/
+    g->foreground = set_colour(get_data(g) - 0x90);
     g->alpha = 0;
   }
 }
@@ -297,23 +343,18 @@ grid* grid_init(void)
     exit(1);
   }
   g->data = data_init();
-  g->x = 0;
-  g->y = 0;
-  g->graphics = 0;
+  g->x = g->y = g->graphics = g->held =  g->dblheight = 0;
   g->alpha = 1;
-  g->background = set_colour(black); /*set to black*/
-  g->foreground = set_colour(white); /*set to white*/
-  g->held = 0;
+  g->background = set_colour(black);
+  g->foreground = set_colour(white);
   g->heldchar = SPACE;
-  g->dblheight = false;
   return g;
 }
 
 byte** data_init(void)
 {
   int i;
-  byte** data;
-  data = (byte**) calloc(ROWS,sizeof(byte*));
+  byte** data = (byte**) calloc(ROWS,sizeof(byte*));
   if(data == NULL) {
     printf("Data array failed to initialise\n");
     exit(1);
@@ -346,7 +387,7 @@ void read_in(byte** data, char* filename)
 void print_array(byte** arr)
 {
   int i,j;
-  for(i=18;i<19;i++) {
+  for(i=0;i<ROWS;i++) {
     for(j=0;j<COLS;j++) {
       printf("%x ",(arr[i][j]).val);
     }

@@ -4,6 +4,7 @@ TARGET = read_in read_in_d
 SOURCES = read_in.c SDL_Wrap.c
 LIBS =  `sdl2-config --libs` -lm
 CC = gcc
+TELETEXTFILE = "test.m7"
 
 all: $(TARGET)
 
@@ -20,4 +21,4 @@ memchk: read_in_d
 	valgrind --error-exitcode=1 --quiet --leak-check=full ./read_in_d
 
 run: all
-	./read_in
+	./read_in $(TELETEXTFILE)
