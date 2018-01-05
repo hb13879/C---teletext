@@ -8,7 +8,6 @@
 #define COLS 40
 #define CHARS ROWS*COLS
 #define MIN 128
-#define STRSIZE 100
 #define HUE 255
 #define FONTFILE "m7fixed.fnt"
 #define SPACE ' '
@@ -17,7 +16,7 @@
 #define DIM 2
 #define OX FNTWIDTH/DIM
 #define OY FNTHEIGHT/ORIG
-
+/*Nulls?*/
 /*put in dot h file*/
 enum heightmd{sgl, dbltop, dblbtm};
 enum shade{black, red, green, yellow, blue, magenta, cyan, white};
@@ -39,7 +38,7 @@ struct grid {
   bool alpha;
   bool dblheight;
   bool held;
-  char heldchar;
+  int heldchar;
   colour background;
   colour foreground;
 };
@@ -48,7 +47,7 @@ typedef struct grid grid;
 grid* grid_init(void);
 byte** data_init(void);
 void read_in(byte** data, char* filename);
-void print_array(byte** g);
+/*void print_array(byte** g); DELETE*/
 void set_graphics(grid* g);
 void set_alpha(grid* g);
 colour set_colour(shade a);
@@ -58,29 +57,52 @@ void set_background(grid* g);
 int wrap(int a);
 void render(grid* g, SDL_Simplewin *sw);
 int set_coords(int xy, int x);
-void Draw_Char(grid* g, SDL_Simplewin *sw);
-void Draw_Sixel(grid* g, SDL_Simplewin *sw);
+void draw_char(grid* g, SDL_Simplewin *sw);
+void draw_sixel(grid* g, SDL_Simplewin *sw);
 void set_heightmd(grid* g);
-/*
-byte* arr_init(void); put these in separate file to abstract data type?
-void arr_process(byte* y);
-void chg_row(byte* y, int i);
-void render(byte* y);
-void set_colour(shade* rgb, colour a);
-void set_coords(unsigned int *x,unsigned int *y, unsigned int i);
-void draw_sixels(SDL_Simplewin *sw, unsigned int xx,unsigned int yy, int data, shade rgbf, shade rgbb, graphmod graphics);
-*/
+void hold_screen(SDL_Simplewin *sw);
+void process_render(grid* g, SDL_Simplewin *sw);
+void free_grid(grid** g);
+void free_data(byte** data);
+
 int main(void)
 {
-  int i,j;
   grid* g;
   SDL_Simplewin sw;
   Neill_SDL_Init(&sw);
   g = grid_init();
   read_in(g->data,"test.m7");
-  print_array(g->data);
+  process_render(g,&sw);
+  hold_screen(&sw);
+  free_grid(&g);
+  return 0;
+}
+
+void free_grid(grid** g)
+{
+  grid* p;
+  p = *g;
+  free_data(p->data);
+  free(p->data);
+  p->data = NULL;
+  free(p);
+  p = NULL;
+}
+
+void free_data(byte** data)
+{
+  int i;
   for(i=0;i<ROWS;i++) {
-    for(j=0;j<COLS;j++) {
+    free(data[i]);
+    data[i] = NULL;
+  }
+}
+
+void process_render(grid* g, SDL_Simplewin *sw)
+{
+  int i,j;
+  for(i=0;i<ROWS;i++) {
+    for(j=0;j<COLS && !sw->finished;j++) {
       g->x = j;
       g->y = i;
       set_graphics(g);
@@ -89,19 +111,19 @@ int main(void)
       set_heightmd(g);
       set_held(g);
       set_background(g);
-      render(g, &sw);
+      render(g, sw);
+      Neill_SDL_Events(sw);
     }
   }
+}
+
+void hold_screen(SDL_Simplewin *sw)
+{
   do {
     SDL_Delay(MILLISECONDDELAY);
-    Neill_SDL_Events(&sw);
-  } while(!sw.finished);/*
-  arr_process(y);
-  render(y);
-  free(g); make this proper
-  printf("%ld\n",FNTWIDTH);*/
+    Neill_SDL_Events(sw);
+  } while(!sw->finished);
   atexit(SDL_Quit);
-  return 0;
 }
 
 void set_background(grid* g)
@@ -117,20 +139,23 @@ void set_background(grid* g)
 void render(grid* g, SDL_Simplewin *sw)
 {
   if((g->data[g->y][g->x].val < 0xA0) || (g->data[g->y][g->x].val >= 0xC0 && g->data[g->y][g->x].val <= 0xDF) || g->alpha == 1) {
-    Draw_Char(g,sw);
+    draw_char(g,sw);
   }
   else {
-    Draw_Sixel(g,sw);
+    draw_sixel(g,sw);
   }
 }
 
-void Draw_Char(grid* g, SDL_Simplewin *sw)
+void draw_char(grid* g, SDL_Simplewin *sw)
 {
   if(g->data[g->y][g->x].val < 0xA0 && g->held) {
-    if(g->data[g->y][g->x].val > 0xFF) {
-      g->data[g->y][g->x].val /= 2;
+    if(g->heldchar > 0xFF) {
+      g->data[g->y][g->x].val = (g->heldchar)/2;
     }
-    Draw_Sixel(g,sw);
+    else {
+      g->data[g->y][g->x].val = g->heldchar;
+    }
+    draw_sixel(g,sw);
   }
   else {
     char c;
@@ -155,7 +180,7 @@ void Draw_Char(grid* g, SDL_Simplewin *sw)
   }
 }
 
-void Draw_Sixel(grid* g, SDL_Simplewin *sw)
+void draw_sixel(grid* g, SDL_Simplewin *sw)
 {
   SDL_Rect rectangle;
   int i,j,lit[ORIG][DIM] = {{0,1},{2,3},{4,6}};
@@ -313,9 +338,7 @@ void read_in(byte** data, char* filename)
     exit(1);
   }
   for(i=0;i<ROWS;i++) {
-    for(j=0;j<COLS;j++) {
-      fread(&((data[i][j]).val),1,1,fp);
-    }
+    for(j=0;j<COLS && fread(&((data[i][j]).val),1,1,fp);j++);
   }
   fclose(fp);
 }
@@ -323,7 +346,7 @@ void read_in(byte** data, char* filename)
 void print_array(byte** arr)
 {
   int i,j;
-  for(i=13;i<14;i++) {
+  for(i=18;i<19;i++) {
     for(j=0;j<COLS;j++) {
       printf("%x ",(arr[i][j]).val);
     }
