@@ -6,7 +6,7 @@
 
 /* Font stuff */
 typedef unsigned short fntrow;
-#define FNTWIDTH (sizeof(fntrow)*8)
+#define FNTWIDTH (sizeof(fntrow)*10)
 #define FNTHEIGHT 18
 #define FNTCHARS 96
 #define FNT1STCHAR 32

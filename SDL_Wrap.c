@@ -147,7 +147,7 @@ void Neill_SDL_DrawTopHalf(SDL_Simplewin *sw, fntrow fontdata[FNTCHARS][FNTHEIGH
          }
          else{
             Neill_SDL_SetDrawColour(sw, rgbb);
-            SDL_RenderDrawPoint(sw->renderer, x + ox, y+oy);
+            SDL_RenderDrawPoint(sw->renderer, x + ox, 2*y+oy);
             SDL_RenderDrawPoint(sw->renderer, x + ox, 2*y+oy+1);
          }
       }
