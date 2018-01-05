@@ -49,7 +49,7 @@ typedef struct grid grid;
 grid* grid_init(void);
 byte** data_init(void);
 void read_in(byte** data, char* filename);
-/*void print_array(byte** g); DELETE*/
+void print_array(byte** g);
 void set_graphics(grid* g);
 void set_alpha(grid* g);
 colour set_colour(shade a);
@@ -72,6 +72,8 @@ heightmd get_heightmd(grid* g);
 void process_data(grid* g);
 void held_graphic(grid* g,SDL_Simplewin *sw);
 char set_char(grid* g);
+void check_opcode(grid* g);
+void set_newline(grid* g);
 
 int main(int argc, char** argv)
 {
@@ -141,6 +143,8 @@ void process_render(grid* g, SDL_Simplewin *sw)
 
 void process_data(grid* g)
 {
+  check_opcode(g);
+  set_newline(g);
   set_graphics(g);
   set_alpha(g);
   set_height(g);
@@ -149,6 +153,28 @@ void process_data(grid* g)
   set_background(g);
 }
 
+void set_newline(grid* g)
+{
+  if(g->x == 0)
+  {
+    g->graphics = 0;
+    g->alpha = 1;
+    g->foreground = set_colour(white);
+    g->background = set_colour(black);
+    g->dblheight = false;
+    g->held = false;
+  }
+}
+
+void check_opcode(grid* g)
+{
+  if(get_data(g) == 0x80 || (get_data(g) >= 0x88 && get_data(g) <= 0x8B) \
+  || (get_data(g) >= 0x8E && get_data(g) <= 0x90) || get_data(g) == 0x98 \
+  || get_data(g) == 0x9B) {
+    printf("Error in opcode\n");
+    exit(1);
+  }
+}
 void hold_screen(SDL_Simplewin *sw)
 {
   do {
@@ -239,6 +265,10 @@ void draw_sixel(grid* g, SDL_Simplewin *sw)
         Neill_SDL_SetDrawColour(sw, g->foreground);
         SDL_RenderFillRect(sw->renderer, &rectangle);
       }
+      else {
+        Neill_SDL_SetDrawColour(sw, g->background);
+        SDL_RenderFillRect(sw->renderer, &rectangle);
+      }
       if(g->graphics == 1) {
         Neill_SDL_SetDrawColour(sw, g->background);
         SDL_RenderDrawRect(sw->renderer, &rectangle);
@@ -285,7 +315,7 @@ void set_held(grid* g)
   if(get_data(g) == 0x9E) {
     g->held = 1;
   }
-  else if(g->x == 0 || get_data(g) == 0x9F) {
+  else if(get_data(g) == 0x9F) {
     g->held = 0;
   }
 }
@@ -307,19 +337,11 @@ void set_alpha(grid* g)
     /*to give correct enumeration for colours:*/
     g->foreground = set_colour(get_data(g) - 0x80);
   }
-  else if(g->x == 0) {
-    g->alpha = 1;
-    g->foreground = set_colour(white);
-  }
 }
 
 void set_graphics(grid* g) /*if you turn select a graphics colour or mode, alphanumeric mode turns off*/
 {
-  if(g->x == 0) {
-    g->graphics = 0;
-    g->alpha = 1;
-  }
-  if(get_data(g) == 0x99) { /*if new line or change*/
+  if(get_data(g) == 0x99) {
     g->graphics = 0;
     g->alpha = 0;
   }
@@ -343,7 +365,11 @@ grid* grid_init(void)
     exit(1);
   }
   g->data = data_init();
-  g->x = g->y = g->graphics = g->held =  g->dblheight = 0;
+  g->x = 0;
+  g->y = 0;
+  g->graphics = 0;
+  g->held = 0;
+  g->dblheight = 0;
   g->alpha = 1;
   g->background = set_colour(black);
   g->foreground = set_colour(white);
@@ -379,7 +405,11 @@ void read_in(byte** data, char* filename)
     exit(1);
   }
   for(i=0;i<ROWS;i++) {
-    for(j=0;j<COLS && fread(&((data[i][j]).val),1,1,fp);j++);
+    for(j=0;j<COLS && fread(&((data[i][j]).val),1,1,fp);j++) {
+      if(data[i][j].val < MIN) {
+        data[i][j].val += MIN;
+      }
+    }
   }
   fclose(fp);
 }
