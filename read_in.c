@@ -126,30 +126,33 @@ void render(grid* g, SDL_Simplewin *sw)
 
 void Draw_Char(grid* g, SDL_Simplewin *sw)
 {
-  char c;
-  fntrow fontdata[FNTCHARS][FNTHEIGHT];
-  if(g->data[g->y][g->x].val >= 0xA0) {
-    c = g->data[g->y][g->x].val - MIN;
+  if(g->data[g->y][g->x].val < 0xA0 && g->held) {
+    if(g->data[g->y][g->x].val > 0xFF) {
+      g->data[g->y][g->x].val /= 2;
+    }
+    Draw_Sixel(g,sw);
   }
-  if(g->data[g->y][g->x].val < 0xA0) {
-    if(g->held == false) {
-      c = SPACE;
+  else {
+    char c;
+    fntrow fontdata[FNTCHARS][FNTHEIGHT];
+    if(g->data[g->y][g->x].val >= 0xA0) {
+      c = g->data[g->y][g->x].val - MIN;
     }
     else {
-      c = g->heldchar;
+      c = SPACE;
     }
+    Neill_SDL_ReadFont(fontdata, FONTFILE);
+    if(g->data[g->y][g->x].height == sgl) {
+      Neill_SDL_DrawChar(sw,fontdata,c,set_coords(g->x,1),set_coords(g->y,0),g->foreground,g->background);
+    }
+    else if(g->data[g->y][g->x].height == dbltop) {
+      Neill_SDL_DrawTopHalf(sw,fontdata,c,set_coords(g->x,1),set_coords(g->y,0),g->foreground,g->background);
+    }
+    else if(g->data[g->y][g->x].height == dblbtm) {
+      Neill_SDL_DrawBottomHalf(sw,fontdata,c,set_coords(g->x,1),set_coords(g->y,0),g->foreground,g->background);
+    }
+    Neill_SDL_UpdateScreen(sw);
   }
-  Neill_SDL_ReadFont(fontdata, FONTFILE);
-  if(g->data[g->y][g->x].height == sgl) {
-    Neill_SDL_DrawChar(sw,fontdata,c,set_coords(g->x,1),set_coords(g->y,0),g->foreground,g->background);
-  }
-  else if(g->data[g->y][g->x].height == dbltop) {
-    Neill_SDL_DrawTopHalf(sw,fontdata,c,set_coords(g->x,1),set_coords(g->y,0),g->foreground,g->background);
-  }
-  else if(g->data[g->y][g->x].height == dblbtm) {
-    Neill_SDL_DrawBottomHalf(sw,fontdata,c,set_coords(g->x,1),set_coords(g->y,0),g->foreground,g->background);
-  }
-  Neill_SDL_UpdateScreen(sw);
 }
 
 void Draw_Sixel(grid* g, SDL_Simplewin *sw)
@@ -174,6 +177,7 @@ void Draw_Sixel(grid* g, SDL_Simplewin *sw)
     }
   }
   Neill_SDL_UpdateScreen(sw);
+  g->heldchar = (g->data[g->y][g->x].val)*g->graphics;
 }
 
 int set_coords(int xy, int x)

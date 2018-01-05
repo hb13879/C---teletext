@@ -166,8 +166,8 @@ void Neill_SDL_DrawBottomHalf(SDL_Simplewin *sw, fntrow fontdata[FNTCHARS][FNTHE
          }
          else{
             Neill_SDL_SetDrawColour(sw, rgbb);
-            SDL_RenderDrawPoint(sw->renderer, x + ox, y+oy);
-            SDL_RenderDrawPoint(sw->renderer, x + ox, 2*y+oy+1);
+            SDL_RenderDrawPoint(sw->renderer, x + ox, 2*(y-FNTHEIGHT/2)+oy);
+            SDL_RenderDrawPoint(sw->renderer, x + ox, 2*(y-FNTHEIGHT/2)+oy+1);
          }
       }
    }
