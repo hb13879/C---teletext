@@ -1,2 +1,1 @@
-hhhh
-jjjj
+First, after installing hex editor Bless, I decided to test my code at the unit level, function by function.

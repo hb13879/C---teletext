@@ -1,0 +1,4 @@
+First, after installing hex editor Bless, I decided to test my code at the unit level, function by function.
+
+In this section I will discuss the testing of the code that actually processed and rendered the data. I will do this at
+the unit level, testing each function/logical step in the smallest increments possible.
