@@ -33,31 +33,40 @@ void free_grid(grid** g)
   }
   else {
     grid* p = *g;
-    free_data(p->data);
+    free_data(&(p->data));
     free_colour(&((*g)->foreground));
     free_colour(&((*g)->background));
-    free(p->data);
-    p->data = NULL;
     free(p);
-    p = NULL;
+    *g = NULL;
   }
 }
 
 void free_colour(colour** a)
 {
-  colour* p = *a;
-  free(p);
-  p = NULL;
+  if(a == NULL) {
+    return;
+  }
+  else {
+    colour* p = *a;
+    free(p);
+    *a = NULL;
+  }
 }
 
-void free_data(byte** data)
+void free_data(byte*** data)
 {
-  int i;
-  IFNULL(data,ON_ERROR("NULL value passed to free_data\n"))
-  for(i=0;i<ROWS;i++) {
-    free(data[i]);
-    data[i] = NULL;
+  if(data == NULL) {
+    return;
   }
+  else {
+    int i;
+    byte** a = *data;
+    for(i=0;i<ROWS;i++) {
+      free(a[i]);
+      a[i] = NULL;
+    }
+  }
+  *data = NULL;
 }
 
 void read_in(byte** data, char* filename)
@@ -74,7 +83,19 @@ void read_in(byte** data, char* filename)
       }
     }
   }
+  check_filesize(fp);
   fclose(fp);
+}
+
+void check_filesize(FILE* fp)
+{
+  fseek(fp,0,SEEK_END);
+  if(ftell(fp) < FILESIZE) {
+    fprintf(stderr, "%s\n", "Warning: teletext file too small\n");
+  }
+  else if(ftell(fp) > FILESIZE) {
+    fprintf(stderr, "%s\n", "Warning: teletext file too large. Only partially read in\n");
+  }
 }
 
 /*Wrappers to facilitate getting and setting data from/in the underlying array*/

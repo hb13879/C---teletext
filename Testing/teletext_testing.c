@@ -1,26 +1,51 @@
-/*#include "teletext.h"
+#include "teletext.h"
 #include <assert.h>
+
+void test_init_free(void);
 
 int main(void)
 {
+  test_init_free();
+  return 0;
+}
+
+void test_init_free(void)
+{
   grid* g;
+  grid* h;
   g = grid_init();
   assert(g->x == 0);
   assert(g->y == 0);
   assert(g->graphics == 0);
   assert(g->alpha == 1);
-  assert(g->foreground == set_colour(white);
-  assert(g->background == set_colour(black);
-  assert(g->background->r);
+  assert(g->background->r == 0);
+  assert(g->background->g == 0);
+  assert(g->background->b == 0);
+  assert(g->foreground->r == HUE);
+  assert(g->foreground->g == HUE);
+  assert(g->foreground->b == HUE);
   assert(g->dblheight == false);
   assert(g->held == false);
   assert(g->heldchar == ' ');
-  free_grid(NULL);  Check free function copes with NULL value
+  /*test background free functions*/
+  h = grid_init();
+  free_data(&(h->data));
+  assert(h->data == NULL);
+  free_colour(&(h->foreground));
+  assert(h->foreground == NULL);
+  free_colour(&(h->background));
+  assert(h->background == NULL);
+  /*test main free function*/
   free_grid(&g);
   assert(g == NULL);
-  return 0;
+  /*Check free functions cope with NULL values*/
+  free_data(NULL);
+  free_colour(NULL);
+  free_grid(NULL);
+  printf("Init and free functions OK\n");
 }
-*/
+
+/*
 #include "teletext.h"
 
 int main(int argc, char** argv)
@@ -40,3 +65,4 @@ int main(int argc, char** argv)
   }
   return 0;
 }
+*/

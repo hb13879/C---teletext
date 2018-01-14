@@ -6,7 +6,7 @@
 
 #define ROWS 25
 #define COLS 40
-#define CHARS ROWS*COLS
+#define FILESIZE ROWS*COLS
 #define BYTE 1
 #define ELS 1
 #define MIN 128
@@ -52,7 +52,7 @@ typedef struct grid grid;
 grid* grid_init(void);
 byte** data_init(void);
 void free_grid(grid** g);
-void free_data(byte** data);
+void free_data(byte*** data);
 int get_data(grid* g);
 void set_data(grid* g, int a);
 heightmd get_heightmd(grid* g);
@@ -60,6 +60,7 @@ void read_in(byte** data, char* filename);
 void print_array(byte** g);
 colour* colour_init(void);
 void free_colour(colour** a);
+void check_filesize(FILE* fp);
 
 /*Data processing functions*/
 void process_data(grid* g);

@@ -39,7 +39,7 @@ void free_grid(grid** g)
     free(p->data);
     p->data = NULL;
     free(p);
-    p = NULL;
+    *g = NULL;
   }
 }
 
