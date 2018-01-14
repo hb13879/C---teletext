@@ -2,10 +2,12 @@
 #include <assert.h>
 
 void test_init_free(void);
+void test_getset_data(void);
 
 int main(void)
 {
   test_init_free();
+  test_getset_data();
   return 0;
 }
 
@@ -43,6 +45,23 @@ void test_init_free(void)
   free_colour(NULL);
   free_grid(NULL);
   printf("Init and free functions OK\n");
+}
+
+void test_getset_data(void)
+{
+  grid* g = grid_init();
+  assert(get_data(g) == 0); /*calloc'ed array*/
+  assert(get_heightmd(g) == sgl);
+  g->x = 5;
+  g->y = 7;
+  /*test data functions*/
+  set_data(g,100);
+  assert(get_data(g) == 100);
+  assert(g->data[7][5].val == 100);
+  /*test height mode function*/
+  g->data[7][5].height = dbltop;
+  assert(get_heightmd(g) == dbltop);
+  printf("Get and set data wrapper functions OK\n");
 }
 
 /*

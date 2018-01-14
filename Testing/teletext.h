@@ -22,10 +22,9 @@
 #define IFNULL(A,B) if(A == NULL) {B;}
 /*Nulls?*/
 /*ifnull*/
-enum heightmd{sgl, dbltop, dblbtm};
+
 enum shade{black, red, green, yellow, blue, magenta, cyan, white};
 
-typedef enum heightmd heightmd;
 typedef enum shade shade;
 
 struct byte {

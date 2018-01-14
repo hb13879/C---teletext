@@ -33,11 +33,9 @@ void free_grid(grid** g)
   }
   else {
     grid* p = *g;
-    free_data(p->data);
+    free_data(&(p->data));
     free_colour(&((*g)->foreground));
     free_colour(&((*g)->background));
-    free(p->data);
-    p->data = NULL;
     free(p);
     *g = NULL;
   }
@@ -45,19 +43,30 @@ void free_grid(grid** g)
 
 void free_colour(colour** a)
 {
-  colour* p = *a;
-  free(p);
-  p = NULL;
+  if(a == NULL) {
+    return;
+  }
+  else {
+    colour* p = *a;
+    free(p);
+    *a = NULL;
+  }
 }
 
-void free_data(byte** data)
+void free_data(byte*** data)
 {
-  int i;
-  IFNULL(data,ON_ERROR("NULL value passed to free_data\n"))
-  for(i=0;i<ROWS;i++) {
-    free(data[i]);
-    data[i] = NULL;
+  if(data == NULL) {
+    return;
   }
+  else {
+    int i;
+    byte** a = *data;
+    for(i=0;i<ROWS;i++) {
+      free(a[i]);
+      a[i] = NULL;
+    }
+  }
+  *data = NULL;
 }
 
 void read_in(byte** data, char* filename)
@@ -74,7 +83,19 @@ void read_in(byte** data, char* filename)
       }
     }
   }
+  check_filesize(fp);
   fclose(fp);
+}
+
+void check_filesize(FILE* fp)
+{
+  fseek(fp,0,SEEK_END);
+  if(ftell(fp) < FILESIZE) {
+    fprintf(stderr, "%s\n", "Warning: teletext file too small\n");
+  }
+  else if(ftell(fp) > FILESIZE) {
+    fprintf(stderr, "%s\n", "Warning: teletext file too large. Only partially read in\n");
+  }
 }
 
 /*Wrappers to facilitate getting and setting data from/in the underlying array*/
@@ -111,7 +132,9 @@ void process_render(grid* g, SDL_Simplewin *sw)
 void process_data(grid* g)
 {
   check_opcode(g);
-  set_newline(g);
+  if(g->x == 0) {
+    set_newline(g);
+  }
   set_graphics(g);
   set_alpha(g);
   set_height(g);
@@ -122,15 +145,12 @@ void process_data(grid* g)
 
 void set_newline(grid* g)
 {
-  if(g->x == 0)
-  {
-    g->graphics = 0;
-    g->alpha = 1;
-    set_colour(g->foreground,white);
-    set_colour(g->background,black);
-    g->dblheight = false;
-    g->held = false;
-  }
+  g->graphics = 0;
+  g->alpha = 1;
+  set_colour(g->foreground,white);
+  set_colour(g->background,black);
+  g->dblheight = false;
+  g->held = false;
 }
 
 void check_opcode(grid* g)
@@ -198,7 +218,7 @@ void held_graphic(grid* g,SDL_Simplewin *sw)
 char set_char(grid* g)
 {
   if(get_data(g) >= 0xA0) {
-    /*to return correct asci value*/
+    /*to return correct asci value given an opcode*/
     return (get_data(g) - MIN);
   }
   else {
@@ -211,18 +231,8 @@ void draw_char(grid* g, SDL_Simplewin *sw)
   fntrow fontdata[FNTCHARS][FNTHEIGHT];
   char c = set_char(g);
   Neill_SDL_ReadFont(fontdata, FONTFILE);
-  if(get_heightmd(g) == sgl) {
-    Neill_SDL_DrawChar(sw,fontdata,c,set_xy(g->x,1),
-    set_xy(g->y,0),g->foreground,g->background);
-  }
-  else if(get_heightmd(g) == dbltop) {
-    Neill_SDL_DrawTopHalf(sw,fontdata,c,set_xy(g->x,1),
-    set_xy(g->y,0),g->foreground,g->background);
-  }
-  else {
-    Neill_SDL_DrawBottomHalf(sw,fontdata,c,set_xy(g->x,1),
-    set_xy(g->y,0),g->foreground,g->background);
-  }
+  Neill_SDL_DrawChar(sw,fontdata,c,set_xy(g->x,1),
+       set_xy(g->y,0),g->foreground,g->background,get_heightmd(g));
 }
 
 void draw_sixel(grid* g, SDL_Simplewin *sw)

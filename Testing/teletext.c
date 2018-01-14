@@ -132,7 +132,9 @@ void process_render(grid* g, SDL_Simplewin *sw)
 void process_data(grid* g)
 {
   check_opcode(g);
-  set_newline(g);
+  if(g->x == 0) {
+    set_newline(g);
+  }
   set_graphics(g);
   set_alpha(g);
   set_height(g);
@@ -143,15 +145,12 @@ void process_data(grid* g)
 
 void set_newline(grid* g)
 {
-  if(g->x == 0)
-  {
-    g->graphics = 0;
-    g->alpha = 1;
-    set_colour(g->foreground,white);
-    set_colour(g->background,black);
-    g->dblheight = false;
-    g->held = false;
-  }
+  g->graphics = 0;
+  g->alpha = 1;
+  set_colour(g->foreground,white);
+  set_colour(g->background,black);
+  g->dblheight = false;
+  g->held = false;
 }
 
 void check_opcode(grid* g)
@@ -219,7 +218,7 @@ void held_graphic(grid* g,SDL_Simplewin *sw)
 char set_char(grid* g)
 {
   if(get_data(g) >= 0xA0) {
-    /*to return correct asci value*/
+    /*to return correct asci value given an opcode*/
     return (get_data(g) - MIN);
   }
   else {
@@ -232,18 +231,8 @@ void draw_char(grid* g, SDL_Simplewin *sw)
   fntrow fontdata[FNTCHARS][FNTHEIGHT];
   char c = set_char(g);
   Neill_SDL_ReadFont(fontdata, FONTFILE);
-  if(get_heightmd(g) == sgl) {
-    Neill_SDL_DrawChar(sw,fontdata,c,set_xy(g->x,1),
-    set_xy(g->y,0),g->foreground,g->background);
-  }
-  else if(get_heightmd(g) == dbltop) {
-    Neill_SDL_DrawTopHalf(sw,fontdata,c,set_xy(g->x,1),
-    set_xy(g->y,0),g->foreground,g->background);
-  }
-  else {
-    Neill_SDL_DrawBottomHalf(sw,fontdata,c,set_xy(g->x,1),
-    set_xy(g->y,0),g->foreground,g->background);
-  }
+  Neill_SDL_DrawChar(sw,fontdata,c,set_xy(g->x,1),
+       set_xy(g->y,0),g->foreground,g->background,get_heightmd(g));
 }
 
 void draw_sixel(grid* g, SDL_Simplewin *sw)

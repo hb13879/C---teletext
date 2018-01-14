@@ -4,7 +4,7 @@ TARGET = teletext teletext_d
 SOURCES = panda_lfc_test.c teletext.c SDL_Wrap.c
 LIBS =  `sdl2-config --libs` -lm
 CC = gcc
-TELETEXTFILE = "test.m7"
+TELETEXTFILE = "lfc.m7"
 
 all: $(TARGET)
 

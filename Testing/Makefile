@@ -7,6 +7,7 @@ CC = gcc
 TELETEXTFILE = "panda.m7"
 CRASHFILE1 = "over_1000_bytes.m7"
 CRASHFILE2 = "under_1000_bytes.m7"
+BADOPCODE = "bad_opcode.m7"
 
 all: $(TARGET)
 
@@ -31,3 +32,4 @@ run: all
 	-./crash02 $(TELETEXTFILE)
 	-./teletext_wrongsize $(CRASHFILE1)
 	-./teletext_wrongsize $(CRASHFILE2)
+	-./teletext_wrongsize $(BADOPCODE)

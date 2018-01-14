@@ -108,73 +108,46 @@ void Neill_SDL_RenderDrawCircle(SDL_Renderer *rend, int cx, int cy, int r)
    }
 }
 
-void Neill_SDL_DrawString(SDL_Simplewin *sw, fntrow fontdata[FNTCHARS][FNTHEIGHT],
-  char *str, int ox, int oy,colour* rgbf, colour* rgbb)
-{
-   int i=0;
-   unsigned char chr;
-   do{
-      chr = str[i++];
-      Neill_SDL_DrawChar(sw, fontdata, chr, ox+i*FNTWIDTH, oy,rgbf,rgbb);
-   }while(str[i]);
-}
-
 void Neill_SDL_DrawChar(SDL_Simplewin *sw, fntrow fontdata[FNTCHARS][FNTHEIGHT],
-  unsigned char chr, int ox, int oy,colour* rgbf, colour* rgbb)
+  unsigned char chr, int ox, int oy,colour* rgbf, colour* rgbb, heightmd md)
 {
-   unsigned x, y;
-   for(y = 0; y < FNTHEIGHT; y++){
-      for(x = 0; x < FNTWIDTH; x++){
-         if(fontdata[chr-FNT1STCHAR][y] >> (FNTWIDTH - 1 - x) & 1){
-            Neill_SDL_SetDrawColour(sw, rgbf);
-            SDL_RenderDrawPoint(sw->renderer, x + ox, y+oy);
-         }
-         else{
-            Neill_SDL_SetDrawColour(sw, rgbb);
-            SDL_RenderDrawPoint(sw->renderer, x + ox, y+oy);
-         }
-      }
-   }
-}
-
-void Neill_SDL_DrawTopHalf(SDL_Simplewin *sw, fntrow fontdata[FNTCHARS][FNTHEIGHT],
-   unsigned char chr, int ox, int oy,colour* rgbf, colour* rgbb)
-{
-   unsigned x, y;
-   for(y = 0; y < FNTHEIGHT/2; y++){
-      for(x = 0; x < FNTWIDTH; x++){
-         if(fontdata[chr-FNT1STCHAR][y] >> (FNTWIDTH - 1 - x) & 1){
-            Neill_SDL_SetDrawColour(sw, rgbf);
-            SDL_RenderDrawPoint(sw->renderer, x + ox, 2*y+oy);
-            SDL_RenderDrawPoint(sw->renderer, x + ox, 2*y+1+oy);
-         }
-         else{
-            Neill_SDL_SetDrawColour(sw, rgbb);
-            SDL_RenderDrawPoint(sw->renderer, x + ox, 2*y+oy);
-            SDL_RenderDrawPoint(sw->renderer, x + ox, 2*y+oy+1);
-         }
-      }
-   }
-}
-
-void Neill_SDL_DrawBottomHalf(SDL_Simplewin *sw, fntrow fontdata[FNTCHARS][FNTHEIGHT],
-   unsigned char chr, int ox, int oy,colour* rgbf, colour* rgbb)
-{
-   unsigned x, y;
-   for(y = FNTHEIGHT/2; y < FNTHEIGHT; y++){
-      for(x = 0; x < FNTWIDTH; x++){
-         if(fontdata[chr-FNT1STCHAR][y] >> (FNTWIDTH - 1 - x) & 1){
-            Neill_SDL_SetDrawColour(sw, rgbf);
-            SDL_RenderDrawPoint(sw->renderer, x + ox, 2*(y-FNTHEIGHT/2)+oy);
-            SDL_RenderDrawPoint(sw->renderer, x + ox, 2*(y-FNTHEIGHT/2)+1+oy);
-         }
-         else{
-            Neill_SDL_SetDrawColour(sw, rgbb);
-            SDL_RenderDrawPoint(sw->renderer, x + ox, 2*(y-FNTHEIGHT/2)+oy);
-            SDL_RenderDrawPoint(sw->renderer, x + ox, 2*(y-FNTHEIGHT/2)+oy+1);
-         }
-      }
-   }
+  unsigned x, y,yinit,yend,ydraw;
+  if(md == sgl) {
+    yinit = 0;
+    yend = FNTHEIGHT;
+  }
+  else if (md == dbltop){
+    yinit = 0;
+    yend = FNTHEIGHT/2;
+  }
+  else {
+    yinit = FNTHEIGHT/2;
+    yend = FNTHEIGHT;
+  }
+  for(y = yinit; y < yend; y++){
+     for(x = 0; x < FNTWIDTH; x++){
+       if(md == sgl) {
+         ydraw = y;
+       }
+       else {
+         ydraw = 2*(y-yinit);
+       }
+        if(fontdata[chr-FNT1STCHAR][y] >> (FNTWIDTH - 1 - x) & 1){
+           Neill_SDL_SetDrawColour(sw, rgbf);
+           SDL_RenderDrawPoint(sw->renderer, x + ox, ydraw+oy);
+           if(md) {
+             SDL_RenderDrawPoint(sw->renderer, x + ox, ydraw+oy+1);
+           }
+        }
+        else{
+           Neill_SDL_SetDrawColour(sw, rgbb);
+           SDL_RenderDrawPoint(sw->renderer, x + ox, ydraw+oy);
+           if(md) {
+             SDL_RenderDrawPoint(sw->renderer, x + ox, ydraw+oy+1);
+           }
+        }
+     }
+  }
 }
 
 void Neill_SDL_ReadFont(fntrow fontdata[FNTCHARS][FNTHEIGHT], char *fname)
