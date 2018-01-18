@@ -32,7 +32,7 @@ int Speech(char** s);
 int NewLine(char** s);
 int Comma(char** s);
 void print_array(unsigned char* a);
-char** read_in(void);
+char** read_in(int* tk);
 void print_tokens(char** t, int l);
 char* string_init(void);
 unsigned char* result_init(void);
@@ -44,6 +44,7 @@ void process_tokens(char** t,FILE* fp);
 
 int main(void)
 {
+  int i,tk;
   char* string;
   unsigned char* result;
   unsigned char* orig;
@@ -51,7 +52,9 @@ int main(void)
   string = string_init();
   result = result_init();
   orig = result;
-  tokens = read_in();
+  tk = count_tokens(fp);
+  tokens = read_in(&tk);
+  for(i=0;i<)
   strcpy(string,"DATA:\"hello\",");
   /*printf("%d\n",Assignment(&string,&result));
   printf("%d\n",InputData(&string,&result));
@@ -83,18 +86,15 @@ void print_tokens(char** t, int l)
   }
 }
 
-char** read_in(void)
+char** read_in(int* tk)
 {
   FILE* fp;
   char** tokens;
-  int tk;
   fp = fopen("authoring tool.txt","rb");
   IFNULL(fp,"Input file failed to open\n")
-  tk = count_tokens(fp);
-  printf("%d\n",tk);
-  tokens = tokens_init(tk);
+  tokens = tokens_init(&tk);
   process_tokens(tokens,fp);
-  print_tokens(tokens,tk);
+  /*print_tokens(tokens,tk);*/
   fclose(fp);
   return tokens;
 }
