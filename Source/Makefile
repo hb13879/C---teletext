@@ -1,7 +1,7 @@
 CFLAGS = `sdl2-config --cflags` -Wall -Wextra -Werror -Wfloat-equal -pedantic -ansi
 INCS = SDL_Wrap.h teletext.h
 TARGET = teletext teletext_d
-SOURCES = panda_lfc_test.c teletext.c SDL_Wrap.c
+SOURCES = RUN_teletext.c teletext.c SDL_Wrap.c
 LIBS =  `sdl2-config --libs` -lm
 CC = gcc
 TELETEXTFILE = "lfc.m7"

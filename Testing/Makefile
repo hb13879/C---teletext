@@ -20,8 +20,8 @@ crash01: crash_test01.c $(SOURCES) $(INCS)
 crash02: crash_test02.c $(SOURCES) $(INCS)
 	$(CC) crash_test02.c $(SOURCES) -o crash02 $(CFLAGS) $(LIBS)
 
-teletext_wrongsize: panda_lfc_test.c $(SOURCES) $(INCS)
-	$(CC) panda_lfc_test.c $(SOURCES) -o teletext_wrongsize $(CFLAGS) $(LIBS)
+teletext_wrongsize: RUN_teletext.c $(SOURCES) $(INCS)
+	$(CC) RUN_teletext.c $(SOURCES) -o teletext_wrongsize $(CFLAGS) $(LIBS)
 
 clean:
 	rm -f $(TARGET)
