@@ -1,87 +1,12 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-
-enum colour{black, red, green, yellow, blue, magenta, cyan, white};
-typedef enum colour colour;
-
-#define PARAM1 "BACKGROUND"
-#define PARAM2 "FOREGROUND"
-#define PARAM3 "GRAPHICS"
-#define COLOUR1 "RED"
-#define COLOUR2 "GREEN"
-#define COLOUR3 "YELLOW"
-#define COLOUR4 "BLUE"
-#define COLOUR5 "MAGENTA"
-#define COLOUR6 "CYAN"
-#define COLOUR7 "WHITE"
-#define COLOUR8 "BLACK"
-#define DATA "DATA"
-#define MAXDATA 200
-#define MAXSTRING 1000
-#define MAXOUTPUT ROWS*COLS
-#define ROWS 25
-#define COLS 40
-#define MAXTOKENS 200
-#define MAXTOKENLENGTH 100
-#define DELIM ","
-#define MAXLINELENGTH 1000
-#define IFNULL(A,B) if(A == NULL) {fprintf(stderr, "%s\n", B);}
-#define HEIGHT "HEIGHT"
-#define GRAPHMD "GRAPHMD"
-#define HOLD "HOLD"
-#define RELEASE "RELEASE"
-#define HEIGHTMD1 "SINGLE"
-#define HEIGHTMD2 "DOUBLE"
-#define GRAPHMD1 "CONTIGIOUS"
-#define GRAPHMD2 "SEPARATED"
-
-void SkipWhitespace(char** s);
-int match(char** s, const char* token);
-int Assignment1(char** s,unsigned char** r); /*COLPARAM COLON COLOUR*/
-int Assignment2(char** s, unsigned char** r,int* db); /*HEIGHT COLON HEIGHTMD*/
-int Assignment3(char** s, unsigned char** r); /*GRAPHMD COLON GRAPHMDPARAM*/
-int InputData(char** s, unsigned char** f,int db, unsigned char* orig);
-int DataValue(char** s, unsigned char** f, int db, unsigned char* orig);
-int ColParam(char** s, unsigned char** r);
-int Colour(char** s, unsigned char** r);
-int Colon(char** s);
-int Data(char** s);
-int Speech(char** s);
-int NewLine(char** s,unsigned char** f,unsigned char* orig);
-int Comma(char** s);
-int End(char** s);
-int Height(char** s);
-int HeightMd(char** s,unsigned char** r, int* db);
-int GraphMdParam(char** s,unsigned char** r);
-int GraphMd(char** s);
-int HeldGraphics(char** s,unsigned char** r);
-void set_background(unsigned char** r,colour x);
-void set_foreground(unsigned char** r,colour x);
-void set_graphics(unsigned char** r, colour x);
-
-void print_array(unsigned char* a);
-char** read_in(FILE* fp,int tk);
-void print_tokens(char** t, int l);
-char* string_init(int ch);
-unsigned char* result_init(void);
-char** tokens_init(int tk);
-void remove_newline(char* a);
-void count_tokens(FILE* fp, int* tk, int* ch);
-void process_tokens(char** t,FILE* fp);
-FILE* open_file(void);
-void write_to_file(unsigned char* r);
-void parse(int tk,char** string, unsigned char** result,char** tokens, unsigned char* orig);
-unsigned char* wrap(unsigned char* a, unsigned char* orig);
-void check_junk(char** s,int i);
+#include "rdp.h"
 
 int main(void)
 {
   int tk,ch;
   FILE* fp;
   char* string;
-  unsigned char* result;
-  unsigned char* orig;
+  Uch* result;
+  Uch* orig; /*record to start of array*/
   char** tokens;
   fp = open_file();
   count_tokens(fp,&tk,&ch);
@@ -90,41 +15,31 @@ int main(void)
   orig = result;
   tokens = read_in(fp,tk);
   parse(tk,&string,&result,tokens,orig);
-  /*print_array(orig);*/
+  print_array(orig);
   write_to_file(orig);
   fclose(fp);
   return 0;
 }
 
-void parse(int tk,char** string, unsigned char** result,char** tokens, unsigned char* orig)
+void parse(int tk,char** string, Uch** result,char** tokens, Uch* orig)
 {
   int i,db;
   db = 0;
   for(i=0;i<tk;i++) {
     strcpy(*string,tokens[i]);
-    if(Assignment1(string,result)) {
-      check_junk(string,i);
-    }
-    else if(Assignment2(string,result,&db)) {
-      check_junk(string,i);
-    }
-    else if(Assignment3(string,result)) {
-      check_junk(string,i);
-    }
-    else if(InputData(string,result,db,orig)) {
-      check_junk(string,i);
-    }
-    else if(HeldGraphics(string,result)) {
-      check_junk(string,i);
-    }
-    else if(NewLine(string,result,orig)) {
-      check_junk(string,i);
-    }
+    /*IF statement simply a wrapper to catch junk following correct whole statements*/
+    if(Assignment1(string,result));
+    else if(Assignment2(string,result,&db));
+    else if(Assignment3(string,result));
+    else if(InputData(string,result,db,orig));
+    else if(HeldGraphics(string,result));
+    else if(NewLine(string,result,orig));
     /*else if(End(string));*/
     else {
       fprintf(stderr, "%s %d\n%s\n", "Syntax Error at following token:",i,"Must be either an Assignment, Data input or New line");
       exit(EXIT_FAILURE);
     }
+    check_junk(string,i);
   }
 }
 
@@ -135,11 +50,13 @@ void check_junk(char** s, int i)
   }
 }
 
-void write_to_file(unsigned char* r)
+void write_to_file(Uch* r)
 {
   FILE* fp;
   fp = fopen("custom.m7","wb");
+  IFNULL(fp,"Output file failed to open\n")
   fwrite(r,1,MAXOUTPUT,fp);
+  fclose(fp);
 }
 
 FILE* open_file(void)
@@ -150,10 +67,10 @@ FILE* open_file(void)
   return fp;
 }
 
-unsigned char* result_init(void)
+Uch* result_init(void)
 {
-  unsigned char* r;
-  r = (unsigned char*) calloc(MAXOUTPUT,sizeof(unsigned char));
+  Uch* r;
+  r = (Uch*) calloc(MAXOUTPUT,sizeof(Uch));
   IFNULL(r,"result string could not be initialised\n");
   return r;
 }
@@ -179,7 +96,7 @@ char** read_in(FILE* fp,int tk)
   char** tokens;
   tokens = tokens_init(tk);
   process_tokens(tokens,fp);
-  /*print_tokens(tokens,tk);*/
+  print_tokens(tokens,tk);
   return tokens;
 }
 
@@ -229,11 +146,11 @@ char** tokens_init(int tk)
   return t;
 }
 
-void print_array(unsigned char* a)
+void print_array(Uch* a)
 {
   int i;
   for(i=0;i<MAXOUTPUT;i++) {
-    if(i%40 == 0) {
+    if(i%COLS == 0) {
       printf("\n");
     }
     printf("%x ",a[i]);
@@ -259,67 +176,58 @@ int match(char** s, const char* token)
   }
 }
 
-int Assignment1(char** s, unsigned char** r)
+int Assignment1(char** s, Uch** r)
 {
   char* tmp = *s;
   SkipWhitespace(s);
   if(!ColParam(s,r)) {
     *s = tmp;
-    /*printf("prameter\n");*/
     return 0;
   }
   if(!Colon(s)) {
     *s = tmp;
-    /*printf("colon\n");*/
     return 0;
   }
   if(!Colour(s,r)) {
     *s = tmp;
-    /*printf("colour\n");*/
     return 0;
   }
   return 1;
 }
 
-int Assignment2(char** s, unsigned char** r, int* db)
+int Assignment2(char** s, Uch** r, int* db)
 {
   char* tmp = *s;
   SkipWhitespace(s);
   if(!Height(s)) {
     *s = tmp;
-    /*printf("prameter\n");*/
     return 0;
   }
   if(!Colon(s)) {
     *s = tmp;
-    /*printf("colon\n");*/
     return 0;
   }
   if(!HeightMd(s,r,db)) {
     *s = tmp;
-    /*printf("colour\n");*/
     return 0;
   }
   return 1;
 }
 
-int Assignment3(char** s, unsigned char** r)
+int Assignment3(char** s, Uch** r)
 {
   char* tmp = *s;
   SkipWhitespace(s);
   if(!GraphMd(s)) {
     *s = tmp;
-    /*printf("prameter\n");*/
     return 0;
   }
   if(!Colon(s)) {
     *s = tmp;
-    /*printf("colon\n");*/
     return 0;
   }
   if(!GraphMdParam(s,r)) {
     *s = tmp;
-    /*printf("colour\n");*/
     return 0;
   }
   return 1;
@@ -334,12 +242,11 @@ int GraphMd(char** s)
   }
   else {
     *s = tmp;
-    /*printf("data\n");*/
     return 0;
   }
 }
 
-int GraphMdParam(char** s,unsigned char** r)
+int GraphMdParam(char** s,Uch** r)
 {
   char *tmp = *s;
   SkipWhitespace(s);
@@ -355,56 +262,50 @@ int GraphMdParam(char** s,unsigned char** r)
   }
   else {
     *s = tmp;
-    /*printf("graphmd\n");*/
     return 0;
   }
 }
 
-int InputData(char** s, unsigned char** f, int db, unsigned char* orig)
+int InputData(char** s, Uch** f, int db, Uch* orig)
 {
   char* tmp = *s;
   SkipWhitespace(s);
   if(!Data(s)) {
     *s = tmp;
-    /*printf("inputdata\n");*/
     return 0;
   }
   if(!Colon(s)) {
     *s = tmp;
-    /*printf("colon\n");*/
     return 0;
   }
   if(!Speech(s)) {
     *s = tmp;
-    /*printf("speech\n");*/
     return 0;
   }
   if(!DataValue(s,f,db,orig)) {
     *s = tmp;
-    /*printf("datavalue\n");*/
     return 0;
   }
   if(!Speech(s)) {
     *s = tmp;
-    /*printf("speech\n");*/
     return 0;
   }
   return 1;
 }
 
-int DataValue(char** s, unsigned char** f, int db, unsigned char* orig)
+int DataValue(char** s, Uch** f, int db, Uch* orig)
 {
   char* tmp = *s;
   char data[MAXDATA];
   int i,numcharsread;
-  /*SkipWhitespace(s);*/
+  SkipWhitespace(s);
   if(sscanf(*s,"%[^\n^\"]%n",data,&numcharsread) == 1) {
     for(i = 0;i<numcharsread;i++) {
       **f = data[i] + 128;
       if(db == 1) {
-        *f = wrap((*f) + COLS,orig);
+        *f = wrap((*f) + COLS,orig); /*set next row to the same data since double height*/
         **f = data[i] + 128;
-        (*f) = *f - COLS;
+        *f = (*f) - COLS; /*reset pointer*/
       }
       (*f)++;
     }
@@ -413,12 +314,11 @@ int DataValue(char** s, unsigned char** f, int db, unsigned char* orig)
   }
   else {
     *s = tmp;
-    /*printf("datavalue\n");*/
     return 0;
   }
 }
 
-unsigned char* wrap(unsigned char* a, unsigned char* orig)
+Uch* wrap(Uch* a, Uch* orig)
 {
   if(a > (orig + MAXOUTPUT)) {
     return a - COLS;
@@ -426,7 +326,7 @@ unsigned char* wrap(unsigned char* a, unsigned char* orig)
   return a;
 }
 
-int ColParam(char** s,unsigned char** r)
+int ColParam(char** s,Uch** r)
 {
   char* tmp = *s;
   SkipWhitespace(s);
@@ -444,13 +344,12 @@ int ColParam(char** s,unsigned char** r)
   }
   else {
     *s = tmp;
-    /*printf("colparam\n");*/
     return 0;
   }
 }
 
 
-int HeldGraphics(char** s,unsigned char** r)
+int HeldGraphics(char** s,Uch** r)
 {
   char* tmp = *s;
   SkipWhitespace(s);
@@ -466,7 +365,6 @@ int HeldGraphics(char** s,unsigned char** r)
   }
   else {
     *s = tmp;
-    /*printf("data\n");*/
     return 0;
   }
 }
@@ -480,12 +378,11 @@ int Height(char** s)
   }
   else {
     *s = tmp;
-    /*printf("data\n");*/
     return 0;
   }
 }
 
-int HeightMd(char** s,unsigned char** r,int* db)
+int HeightMd(char** s,Uch** r,int* db)
 {
   char *tmp = *s;
   SkipWhitespace(s);
@@ -503,12 +400,11 @@ int HeightMd(char** s,unsigned char** r,int* db)
   }
   else {
     *s = tmp;
-    /*printf("colour\n");*/
     return 0;
   }
 }
 
-void set_background(unsigned char** r,colour x)
+void set_background(Uch** r,colour x)
 {
   **r = 0x80 + x;
   (*r)++;
@@ -516,19 +412,19 @@ void set_background(unsigned char** r,colour x)
   (*r)++;
 }
 
-void set_foreground(unsigned char** r,colour x)
+void set_foreground(Uch** r,colour x)
 {
   **r = 0x80 + x;
   (*r)++;
 }
 
-void set_graphics(unsigned char** r, colour x)
+void set_graphics(Uch** r, colour x)
 {
   **r = 0x90 + x;
   (*r)++;
 }
 
-void set_colour(unsigned char** r, colour x)
+void set_colour(Uch** r, colour x)
 {
   if(!x) {
     **r = 0x9C;
@@ -545,7 +441,7 @@ void set_colour(unsigned char** r, colour x)
   }
 }
 
-int Colour(char** s,unsigned char** r)
+int Colour(char** s,Uch** r)
 {
   char *tmp = *s;
   SkipWhitespace(s);
@@ -583,7 +479,6 @@ int Colour(char** s,unsigned char** r)
   }
   else {
     *s = tmp;
-    /*printf("colour\n");*/
     return 0;
   }
 }
@@ -597,7 +492,6 @@ int Colon(char** s)
   }
   else {
     *s = tmp;
-    /*printf("colon\n");*/
     return 0;
   }
 }
@@ -611,7 +505,6 @@ int Data(char** s)
   }
   else {
     *s = tmp;
-    /*printf("data\n");*/
     return 0;
   }
 }
@@ -625,17 +518,16 @@ int Speech(char** s)
   }
   else {
     *s = tmp;
-    /*printf("speech\n");*/
     return 0;
   }
 }
 
-int NewLine(char** s,unsigned char** r,unsigned char* orig)
+int NewLine(char** s,Uch** r,Uch* orig)
 {
   char* tmp = *s;
   SkipWhitespace(s);
   if(match(s,";")) {
-    while((((*r)+sizeof(unsigned char))-orig)%(COLS) != 0) {
+    while((((*r)+sizeof(Uch))-orig)%(COLS) != 0) {
       if(**r == 0) {
         **r = 0xa0;
         (*r)++;
@@ -650,7 +542,6 @@ int NewLine(char** s,unsigned char** r,unsigned char* orig)
   }
   else {
     *s = tmp;
-    /*printf("newline\n");*/
     return 0;
   }
 }
@@ -664,7 +555,6 @@ int End(char** s)
   }
   else {
     *s = tmp;
-    /*printf("end\n");*/
     return 0;
   }
 }
