@@ -1,0 +1,33 @@
+My extension is an authoring tool, parsed by a recursive descent parser. It allows the user to type basic commands,
+for example "BACKGROUND:RED","GRAPHICS:CONTIGIOUS","HOLD" or DATA:"Hello, World". A text file containing these
+commands (authoring_tool.txt) is parsed by the code in rdp.c. This outputs a .m7 file which is then passed into
+teletext.c, and renders the file to the screen.
+
+The grammar the recursive descent parser uses is as follows, written in Backus-Naur Form. To summarise, there are
+2 types of valid command: an assignment, where a parameter value is set, and data input, where asci characters or
+graphics codes are input. A new line can be input using ; or by pressing enter. The easiest way to use the tool is
+to write code in 25 lines, with code relating to a given line appearing on that line. An example file is created and
+is rendered when the make run command is executed.
+
+ASSIGNMENT  ::= COLPARAM COLON COLOUR | GRAPHMD COLON GRAPHMDPARAM | HEIGHT COLON HEIGHTMD
+INPUTDATA   ::= DATA COLON SPEECH DATAVALUE SPEECH
+DATAVALUE   ::= [ -~]+
+COLPARAM    ::= "BACKGROUND" | "FOREGROUND" | "GRAPHICS"
+COLOUR      ::= "RED" | "GREEN" | "YELLOW" | "BLUE" | "MAGENTA" | "CYAN" | "WHITE" | "BLACK"
+HEIGHT      ::= "HEIGHT"
+HEIGHTMD    ::= "SINGLE" | "DOUBLE"
+GRAPHMD     ::= "GRAPHMD"
+GRAPHMDPARAM::= "CONTIGIOUS" | "SEPARATE"
+COLON       ::= ":"
+DATA        ::= "DATA"
+SPEECH      ::= """
+NEWLINE     ::= ";"
+END         ::= "END"
+
+The keyword END can be written if you wish to end your teletext code before the 25th line. This will fill the remainder
+with spaces.
+
+There are a couple of areas for future development with this tool, were more time available. For example, the GUI for
+this tool could obviously be improved. In addition, a better system for entering graphics could be created. At the moment
+the user must enter the character with the correct asci code corresponding to the relevenat graphic as per the tables in
+the question. However, the back end of the recursive descent parser provides a good baseline for any such modifications.

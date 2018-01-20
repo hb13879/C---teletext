@@ -20,16 +20,16 @@ crash01: crash_test01.c $(SOURCES) $(INCS)
 crash02: crash_test02.c $(SOURCES) $(INCS)
 	$(CC) crash_test02.c $(SOURCES) -o crash02 $(CFLAGS) $(LIBS)
 
-teletext_wrongsize: RUN_teletext.c $(SOURCES) $(INCS)
+teletext_wrongsize: $(SOURCES) $(INCS)
 	$(CC) RUN_teletext.c $(SOURCES) -o teletext_wrongsize $(CFLAGS) $(LIBS)
 
 clean:
 	rm -f $(TARGET)
 
 run: all
-	./teletest $(TELETEXTFILE)
 	-./crash01
 	-./crash02 $(TELETEXTFILE)
 	-./teletext_wrongsize $(CRASHFILE1)
 	-./teletext_wrongsize $(CRASHFILE2)
 	-./teletext_wrongsize $(BADOPCODE)
+	./teletest $(TELETEXTFILE)

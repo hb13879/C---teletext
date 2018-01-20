@@ -155,11 +155,11 @@ void set_newline(grid* g)
 
 void check_opcode(grid* g)
 {
-  if(get_data(g) == 0x80 || (get_data(g) >= 0x88 && get_data(g) <= 0x8B) \
-  || (get_data(g) >= 0x8E && get_data(g) <= 0x90) || get_data(g) == 0x98 \
-  || get_data(g) == 0x9B || get_data(g) > 0xFF) {
+  if(get_data(g) == OP1 || (get_data(g) >= OP2 && get_data(g) <= OP3) \
+  || (get_data(g) >= OP4 && get_data(g) <= OP5) || get_data(g) == OP6 \
+  || get_data(g) == OP7 || get_data(g) > OP8) {
     fprintf(stderr, "%d,%d\n",g->x,g->y);
-    ON_ERROR("Unrecognised opcode at above address\n");
+    ON_ERROR("Unrecognised opcode at above address\n\n");
   }
   /*nb no need to check if <0x80 as this was dealt with by read_in function*/
 }

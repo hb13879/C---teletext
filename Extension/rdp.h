@@ -28,8 +28,10 @@ typedef unsigned char Uch;
 #define HEIGHTMD2 "DOUBLE"
 #define GRAPHMD1 "CONTIGIOUS"
 #define GRAPHMD2 "SEPARATED"
+#define END "END"
 
 /*Auxiliary*/
+#define FILENAME "authoring_tool.txt"
 #define MAXDATA 200
 #define MAXSTRING 1000
 #define MAXOUTPUT ROWS*COLS
@@ -38,8 +40,9 @@ typedef unsigned char Uch;
 #define MAXTOKENS 200
 #define MAXTOKENLENGTH 100
 #define DELIM ","
-#define IFNULL(A,B) if(A == NULL) {fprintf(stderr, "%s\n", B);}
 #define MAXLINELENGTH 1000
+#define IFNULL(A,B) if(A == NULL) {B;}
+#define ON_ERROR(STR) fprintf(stderr, STR); exit(EXIT_FAILURE)
 
 /*Recursive Descent Parser Functions*/
 void SkipWhitespace(char** s);
@@ -55,7 +58,7 @@ int Colon(char** s);
 int Data(char** s);
 int Speech(char** s);
 int NewLine(char** s,unsigned char** f,unsigned char* orig);
-int End(char** s);
+int End(char** s, Uch** r,Uch* rx);
 int Height(char** s);
 int HeightMd(char** s,unsigned char** r, int* db);
 int GraphMdParam(char** s,unsigned char** r);
@@ -80,3 +83,6 @@ void write_to_file(unsigned char* r);
 void parse(int tk,char** string, unsigned char** result,char** tokens, unsigned char* orig);
 unsigned char* wrap(unsigned char* a, unsigned char* orig);
 void check_junk(char** s,int i);
+void free_tokens(char*** t);
+void free_string(char** s);
+void free_result(Uch** r);

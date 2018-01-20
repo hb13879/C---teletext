@@ -4,24 +4,30 @@ int main(void)
 {
   int tk,ch;
   FILE* fp;
-  char* string;
   Uch* result;
-  Uch* orig; /*record to start of array*/
+  char* string;
+  char* sx;
+  Uch* rx; /*record start of array*/
   char** tokens;
   fp = open_file();
   count_tokens(fp,&tk,&ch);
   string = string_init(ch);
   result = result_init();
-  orig = result;
+  rx = result;
+  sx = string;
+  
   tokens = read_in(fp,tk);
-  parse(tk,&string,&result,tokens,orig);
-  print_array(orig);
-  write_to_file(orig);
+  parse(tk,&string,&result,tokens,rx);
+  /*print_array(rx);*/
+  write_to_file(rx);
+  free_result(&rx);
+  free_string(&sx);
   fclose(fp);
   return 0;
 }
 
-void parse(int tk,char** string, Uch** result,char** tokens, Uch* orig)
+
+void parse(int tk,char** string, Uch** result,char** tokens, Uch* rx)
 {
   int i,db;
   db = 0;
@@ -31,10 +37,12 @@ void parse(int tk,char** string, Uch** result,char** tokens, Uch* orig)
     if(Assignment1(string,result));
     else if(Assignment2(string,result,&db));
     else if(Assignment3(string,result));
-    else if(InputData(string,result,db,orig));
+    else if(InputData(string,result,db,rx));
     else if(HeldGraphics(string,result));
-    else if(NewLine(string,result,orig));
-    /*else if(End(string));*/
+    else if(NewLine(string,result,rx));
+    else if(End(string,result,rx)) {
+      return;
+    }
     else {
       fprintf(stderr, "%s %d\n%s\n", "Syntax Error at following token:",i,"Must be either an Assignment, Data input or New line");
       exit(EXIT_FAILURE);
@@ -47,14 +55,39 @@ void check_junk(char** s, int i)
 {
   if(**s != '\0') {
     fprintf(stderr, "%s %d\n", "Junk after correct formula in token",i);
+    exit(EXIT_FAILURE);
   }
+}
+
+void free_tokens(char*** t)
+{
+  int i;
+  char** a = *t;
+  for(i=0;i<MAXLINELENGTH;i++) {
+    free(a[i]);
+    a[i] = NULL;
+  }
+  *t = NULL;
+}
+
+
+void free_string(char** s)
+{
+  free(*s);
+  *s = NULL;
+}
+
+void free_result(Uch** r)
+{
+  free(*r);
+  *r = NULL;
 }
 
 void write_to_file(Uch* r)
 {
   FILE* fp;
   fp = fopen("custom.m7","wb");
-  IFNULL(fp,"Output file failed to open\n")
+  IFNULL(fp,ON_ERROR("Output file failed to open\n"))
   fwrite(r,1,MAXOUTPUT,fp);
   fclose(fp);
 }
@@ -62,8 +95,8 @@ void write_to_file(Uch* r)
 FILE* open_file(void)
 {
   FILE* fp;
-  fp = fopen("authoring tool.txt","rb");
-  IFNULL(fp,"Input file failed to open\n")
+  fp = fopen(FILENAME,"rb");
+  IFNULL(fp,ON_ERROR("Input file failed to open\n"))
   return fp;
 }
 
@@ -71,7 +104,7 @@ Uch* result_init(void)
 {
   Uch* r;
   r = (Uch*) calloc(MAXOUTPUT,sizeof(Uch));
-  IFNULL(r,"result string could not be initialised\n");
+  IFNULL(r,ON_ERROR("Result string could not be initialised\n"));
   return r;
 }
 
@@ -79,7 +112,7 @@ char* string_init(int ch)
 {
   char* s;
   s = (char*) calloc(ch+1,sizeof(char));
-  IFNULL(s,"String could not be initialised\n")
+  IFNULL(s,ON_ERROR("String could not be initialised\n"))
   return s;
 }
 
@@ -96,16 +129,17 @@ char** read_in(FILE* fp,int tk)
   char** tokens;
   tokens = tokens_init(tk);
   process_tokens(tokens,fp);
-  print_tokens(tokens,tk);
+  /*print_tokens(tokens,tk);*/
   return tokens;
 }
 
 void process_tokens(char** t,FILE* fp)
 {
+  int l = 0;
   int i = 0;
   char a[MAXLINELENGTH];
   char* p;
-  while(fgets(a,sizeof(a),fp) != NULL) {
+  while(fgets(a,sizeof(a),fp) != NULL && l<ROWS) {
     remove_newline(a);
     p = strtok(a,DELIM);
     while(p!=NULL) {
@@ -114,6 +148,7 @@ void process_tokens(char** t,FILE* fp)
       p = strtok(NULL,DELIM);
       i++;
     }
+    l++;
   }
 }
 
@@ -138,10 +173,10 @@ char** tokens_init(int tk)
 {
   int i;
   char** t = (char**) calloc(tk,sizeof(char*));
-  IFNULL(t,"Lines array failed to initialise\n")
+  IFNULL(t,ON_ERROR("Lines array failed to initialise\n"))
   for(i=0;i<tk;i++) {
     t[i] = (char*) calloc(MAXLINELENGTH, sizeof(char));
-    IFNULL(t[i],"Lines array failed to initialise\n")
+    IFNULL(t[i],ON_ERROR("Lines array failed to initialise\n"))
   }
   return t;
 }
@@ -266,7 +301,7 @@ int GraphMdParam(char** s,Uch** r)
   }
 }
 
-int InputData(char** s, Uch** f, int db, Uch* orig)
+int InputData(char** s, Uch** f, int db, Uch* rx)
 {
   char* tmp = *s;
   SkipWhitespace(s);
@@ -282,7 +317,7 @@ int InputData(char** s, Uch** f, int db, Uch* orig)
     *s = tmp;
     return 0;
   }
-  if(!DataValue(s,f,db,orig)) {
+  if(!DataValue(s,f,db,rx)) {
     *s = tmp;
     return 0;
   }
@@ -293,7 +328,7 @@ int InputData(char** s, Uch** f, int db, Uch* orig)
   return 1;
 }
 
-int DataValue(char** s, Uch** f, int db, Uch* orig)
+int DataValue(char** s, Uch** f, int db, Uch* rx)
 {
   char* tmp = *s;
   char data[MAXDATA];
@@ -303,7 +338,7 @@ int DataValue(char** s, Uch** f, int db, Uch* orig)
     for(i = 0;i<numcharsread;i++) {
       **f = data[i] + 128;
       if(db == 1) {
-        *f = wrap((*f) + COLS,orig); /*set next row to the same data since double height*/
+        *f = wrap((*f) + COLS,rx); /*set next row to the same data since double height*/
         **f = data[i] + 128;
         *f = (*f) - COLS; /*reset pointer*/
       }
@@ -318,9 +353,9 @@ int DataValue(char** s, Uch** f, int db, Uch* orig)
   }
 }
 
-Uch* wrap(Uch* a, Uch* orig)
+Uch* wrap(Uch* a, Uch* rx)
 {
-  if(a > (orig + MAXOUTPUT)) {
+  if(a > (rx + MAXOUTPUT)) {
     return a - COLS;
   }
   return a;
@@ -522,12 +557,12 @@ int Speech(char** s)
   }
 }
 
-int NewLine(char** s,Uch** r,Uch* orig)
+int NewLine(char** s,Uch** r,Uch* rx)
 {
   char* tmp = *s;
   SkipWhitespace(s);
   if(match(s,";")) {
-    while((((*r)+sizeof(Uch))-orig)%(COLS) != 0) {
+    while((((*r)+sizeof(Uch))-rx)%(COLS) != 0) {
       if(**r == 0) {
         **r = 0xa0;
         (*r)++;
@@ -546,11 +581,15 @@ int NewLine(char** s,Uch** r,Uch* orig)
   }
 }
 
-int End(char** s)
+int End(char** s, Uch** r,Uch* rx)
 {
   char* tmp = *s;
   SkipWhitespace(s);
-  if(match(s,"\0")) {
+  if(match(s,END)) {
+    while((*r) < (rx + MAXOUTPUT)) {
+      **r = 0xA0;
+      (*r)++;
+    }
     return 1;
   }
   else {

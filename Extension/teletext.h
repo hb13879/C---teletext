@@ -18,10 +18,18 @@
 #define SXW 2 /*Sixel width*/
 #define OX FNTWIDTH/SXW
 #define OY FNTHEIGHT/SXH
-#define ON_ERROR(STR) fprintf(stderr, STR); exit(EXIT_FAILURE)
+#define ON_ERROR(STR) fprintf(stderr, STR); exit(EXIT_FAILURE); atexit(SDL_Quit);
 #define IFNULL(A,B) if(A == NULL) {B;}
-/*Nulls?*/
-/*ifnull*/
+
+/*BANNED OPCODES*/
+#define OP1 0x80
+#define OP2 0x88
+#define OP3 0x8B
+#define OP4 0x8E
+#define OP5 0x90
+#define OP6 0x98
+#define OP7 0x9B
+#define OP8 0xFF
 
 enum shade{black, red, green, yellow, blue, magenta, cyan, white};
 

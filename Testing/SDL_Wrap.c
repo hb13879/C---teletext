@@ -79,35 +79,6 @@ void Neill_SDL_SetDrawColour(SDL_Simplewin *sw, colour* rgb)
    SDL_SetRenderDrawColor(sw->renderer, rgb->r, rgb->g, rgb->b, SDL_ALPHA_OPAQUE);
 }
 
-/* Filled Circle centred at (cx,cy) of radius r, see :
-   http://content.gpwiki.org/index.php/SDL:Tutorials:Drawing_and_Filling_Circles */
-void Neill_SDL_RenderFillCircle(SDL_Renderer *rend, int cx, int cy, int r)
-{
-   double dy;
-   for (dy = 1; dy <= r; dy += 1.0) {
-        double dx = floor(sqrt((2.0 * r * dy) - (dy * dy)));
-        SDL_RenderDrawLine(rend, cx-dx, cy+r-dy, cx+dx, cy+r-dy);
-        SDL_RenderDrawLine(rend, cx-dx, cy-r+dy, cx+dx, cy-r+dy);
-   }
-}
-
-/* Circle centred at (cx,cy) of radius r, see :
-   http://content.gpwiki.org/index.php/SDL:Tutorials:Drawing_and_Filling_Circles */
-void Neill_SDL_RenderDrawCircle(SDL_Renderer *rend, int cx, int cy, int r)
-{
-   double dx, dy;
-   dx = floor(sqrt((2.0 * r ) ));
-   SDL_RenderDrawLine(rend, cx-dx, cy+r, cx+dx, cy+r);
-   SDL_RenderDrawLine(rend, cx-dx, cy-r, cx+dx, cy-r);
-   for (dy = 1; dy <= r; dy += 1.0) {
-        dx = floor(sqrt((2.0 * r * dy) - (dy * dy)));
-        SDL_RenderDrawPoint(rend, cx+dx, cy+r-dy);
-        SDL_RenderDrawPoint(rend, cx+dx, cy-r+dy);
-        SDL_RenderDrawPoint(rend, cx-dx, cy+r-dy);
-        SDL_RenderDrawPoint(rend, cx-dx, cy-r+dy);
-   }
-}
-
 void Neill_SDL_DrawChar(SDL_Simplewin *sw, fntrow fontdata[FNTCHARS][FNTHEIGHT],
   unsigned char chr, int ox, int oy,colour* rgbf, colour* rgbb, heightmd md)
 {

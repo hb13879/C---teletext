@@ -6,10 +6,9 @@ int main(int argc, char** argv)
     ON_ERROR("Incorrect usage - use the form ./prog teletextfilename.extension\n");
   }
   else {
-    grid* g;
     SDL_Simplewin sw;
+    grid* g = grid_init();
     Neill_SDL_Init(&sw);
-    g = grid_init();
     read_in(g->data,argv[1]);
     process_render(g,&sw);
     free_grid(&g);

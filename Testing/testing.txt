@@ -1,4 +1,64 @@
-First, after installing hex editor Bless, I decided to test my code at the unit level, function by function.
+Testing
 
-In this section I will discuss the testing of the code that actually processed and rendered the data. I will do this at
-the unit level, testing each function/logical step in the smallest increments possible.
+This file details the testing I carried out on my teletext code. 3 distinct approaches to testing were used.
+All three methods were dynamic, meaning that code was actually executed in order to test. Static testing,
+that is reviewing the code, was also carried out but I will not discuss this in detail here.
+
+The first form of dynamic testing was unit level testing. This means testing each function is operating
+correctly independently of the wider system. This is performed inside the teletext_testing.c file. More details can be found below.
+The second type of testing I carried out was destructive testing. This means testing using code designed
+to cause a crash. Again, more details can be found below. Thirdly, system testing was carried out using the .m7
+files test.m7, panda.m7 and lfc.m7. These outputs were compared to the gifs provided in the question to provide validation
+that the code was working correctly.
+
+Unit testing
+
+In this section I will give more detail about unit tests. I will refer to the file teletext_testing.c. The first function
+tests all functions used for initialising or freeing data arrays. The data structure used in the code is parent 'grid'
+structure which contains an array of 100 'bytes', each of which has a data value as well as a double height parameter.
+The overarching grid also carries parameters relating to graphics, colours, held graphics and letter height. With such
+a non trivial data structure, the first function is vital. One important thing it checks is whether the 2d calloc'ed
+array of bytes is allocated correctly, as well as whether it is freed correctly. The freeing of this data array was one
+bug that this test function revealed: the grid->data pointer was not left as NULL after freeing the underying array at
+first. This was solved by passing in a pointer to the start of the 2d array (a byte***) so that the byte** could be
+altered from within the function. If this bug had not been caught the code would have been left with a pointer to the
+old array, which will remain in the same place in memory until it is overwritten. Leaving this pointer as this value
+leaves the risk of that pointer being followed later in the code, perhaps leading to unexpected/undefined behaviour
+if not caught by the compiler.
+Another issue this first function examines is the use of the colour struct. The grid parent structure contains colour
+pointers for the background and foreground colours. It is therefore necessary to check that these are initialised and
+freed correctly.
+All in all, this function is so important because initialising a data structure with so many components is likely to
+lead to problems if not tested robustly.
+The other functions in this file systematically test the other functions in teletext.c. I will only focus on a few details
+here however.
+On a couple of occasions for loops are used to test whether colours are set correctly and as expected. This makes use
+of the data structure colour, which contains a red, green and blue integer. It also makes use of the enumerated type
+'shade'. This enumeration, together with an auxiliary function that tests whether a colour is indeed the shade it
+is meant to be, allows a for loop to be used to cycle through all the available colours to test whether they have
+been set as intended.
+Another important unit testing function which revealed a bug was that testing the newline operations in the main code.
+According to the specification, when a new line is reached in the teletext grid, parameters should be reset to default
+values. Originally, strange output was being seen when system tests were carried out. It transpired that this was due
+to these values not being reset when a newline was reached.
+
+Destructive Testing
+
+5 destructive tests were carried out as follows:
+
+1 & 2: These tested the read_in function and how it dealt with NULL parameters, to test the cases that a NULL data array
+or a NULL teletext filename were passed in. This code tests whether or not the code crashes gracefully. It does.
+
+3 & 4: These tests are designed to pass the code teletext files that are not the specified size (in this case 1000 bytes).
+As the teletext files passed in make clear on execution, the code still renders either the first 1000 bytes or as
+many bytes as exist in this case. The code does not actually crash.
+
+5: The fifth test ensures the code deals correctly with invalid opcodes being passed to it. In this case it again crashes
+gracefully.
+
+When typing 'make run' you should see relevant crash messages for each of these in turn, before information on the unit
+tests at the end.
+
+System Testing
+
+As mentioned, the code was tested using the .m7 files porvided and comparing the outputs with their respective gifs.
