@@ -1,2 +1,0 @@
-# ass4
-Teletext
