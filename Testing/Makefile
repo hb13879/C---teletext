@@ -9,6 +9,8 @@ CRASHFILE1 = "over_1000_bytes.m7"
 CRASHFILE2 = "under_1000_bytes.m7"
 BADOPCODE = "bad_opcode.m7"
 
+default: all run
+
 all: $(TARGET)
 
 teletest: teletext_testing.c $(SOURCES) $(INCS)
