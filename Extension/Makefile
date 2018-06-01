@@ -7,6 +7,8 @@ LIBS =  `sdl2-config --libs` -lm
 CC = gcc
 TELETEXTFILE = "custom.m7"
 
+default: all run
+
 all: $(TARGET)
 
 rdp:

@@ -4,7 +4,9 @@ TARGET = teletext teletext_d
 SOURCES = RUN_teletext.c teletext.c SDL_Wrap.c
 LIBS =  `sdl2-config --libs` -lm
 CC = gcc
-TELETEXTFILE = "panda.m7"
+TELETEXTFILE = "M7/panda.m7"
+
+default: all run
 
 all: $(TARGET)
 
